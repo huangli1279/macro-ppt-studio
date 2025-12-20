@@ -324,8 +324,8 @@ export function SlideRenderer({
           <Image
             src="/webank-logo.png"
             alt="WeBank Logo"
-            width={isThumbnail ? 36 : 72}
-            height={isThumbnail ? 12 : 24}
+            width={isThumbnail ? 36 : 60}
+            height={isThumbnail ? 12 : 20}
             className="object-contain"
             unoptimized
           />
