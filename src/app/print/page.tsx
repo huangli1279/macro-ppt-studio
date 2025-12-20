@@ -5,22 +5,13 @@ import { Suspense, useEffect, useState } from "react";
 import { PPTReport } from "@/types/slide";
 import { SlideRenderer } from "@/components/slide";
 
-// Load font and wait for it to be ready
+// Wait for fonts to be ready (uses system fonts, no network required)
 async function loadFonts(): Promise<void> {
-  // Create a link element for Google Fonts
-  const link = document.createElement("link");
-  link.href =
-    "https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&display=swap";
-  link.rel = "stylesheet";
-  document.head.appendChild(link);
-
-  // Wait for the font to load
   try {
-    await document.fonts.load('400 16px "Noto Sans SC"');
-    await document.fonts.load('700 16px "Noto Sans SC"');
+    // Wait for system fonts to be ready
     await document.fonts.ready;
   } catch (e) {
-    console.warn("Font loading failed, using fallback:", e);
+    console.warn("Font loading check failed:", e);
   }
 }
 
@@ -114,7 +105,7 @@ function PrintContent() {
           }
         }
         * {
-          font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", "WenQuanYi Micro Hei", -apple-system, BlinkMacSystemFont, sans-serif !important;
+          font-family: "Noto Sans CJK SC", "Noto Sans SC", "Source Han Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", "WenQuanYi Micro Hei", "WenQuanYi Zen Hei", -apple-system, BlinkMacSystemFont, sans-serif !important;
         }
         body {
           margin: 0;
