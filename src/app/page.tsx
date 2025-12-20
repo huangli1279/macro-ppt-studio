@@ -18,7 +18,7 @@ import {
 import { FullscreenPresenter } from "@/components/presentation/FullscreenPresenter";
 import { PPTReport, SlideData } from "@/types/slide";
 import {
-  Upload,
+  Save,
   FileDown,
   Code,
   Eye,
@@ -243,11 +243,11 @@ export default function Home() {
                   {isSaving ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
-                    <Upload className="h-4 w-4" />
+                    <Save className="h-4 w-4" />
                   )}
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>发布</TooltipContent>
+              <TooltipContent>保存</TooltipContent>
             </Tooltip>
 
             <Tooltip>
