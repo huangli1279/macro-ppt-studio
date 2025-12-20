@@ -71,12 +71,18 @@ export function SlideModal({
   const [mode, setMode] = useState<"config" | "source">("config");
   const [formData, setFormData] = useState<SlideData>(slide || emptySlide);
   const [sourceCode, setSourceCode] = useState("");
+  // Store chart data as strings for editing
+  const [chartDataStrings, setChartDataStrings] = useState<string[]>([]);
 
   // Sync form data when slide changes
   useEffect(() => {
     const data = slide || emptySlide;
     setFormData(data);
     setSourceCode(JSON.stringify(data, null, 2));
+    // Initialize chart data strings
+    setChartDataStrings(
+      data.charts.map((chart) => JSON.stringify(chart.data, null, 2))
+    );
   }, [slide, open]);
 
   // Sync source code when form data changes in config mode
@@ -118,13 +124,16 @@ export function SlideModal({
   // Chart management
   const addChart = () => {
     if (formData.charts.length < 4) {
+      const newChart = { type: "echarts" as const, data: defaultChartData.echarts };
       setFormData((prev) => ({
         ...prev,
-        charts: [
-          ...prev.charts,
-          { type: "echarts", data: defaultChartData.echarts },
-        ],
+        charts: [...prev.charts, newChart],
       }));
+      // Add new chart data string
+      setChartDataStrings((prev) => [
+        ...prev,
+        JSON.stringify(newChart.data, null, 2),
+      ]);
     }
   };
 
@@ -133,18 +142,32 @@ export function SlideModal({
       ...prev,
       charts: prev.charts.filter((_, i) => i !== index),
     }));
+    setChartDataStrings((prev) => prev.filter((_, i) => i !== index));
   };
 
   const updateChartType = (index: number, type: ChartConfig["type"]) => {
+    const newData = defaultChartData[type];
     setFormData((prev) => ({
       ...prev,
       charts: prev.charts.map((c, i) =>
-        i === index ? { type, data: defaultChartData[type] } : c
+        i === index ? { type, data: newData } : c
       ),
     }));
+    // Update the chart data string for this chart
+    setChartDataStrings((prev) =>
+      prev.map((str, i) =>
+        i === index ? JSON.stringify(newData, null, 2) : str
+      )
+    );
   };
 
-  const updateChartData = (index: number, dataStr: string) => {
+  const updateChartDataString = (index: number, dataStr: string) => {
+    // Always update the string state to allow editing
+    setChartDataStrings((prev) =>
+      prev.map((str, i) => (i === index ? dataStr : str))
+    );
+
+    // Try to parse and update formData if valid JSON
     try {
       const data = JSON.parse(dataStr);
       setFormData((prev) => ({
@@ -154,7 +177,8 @@ export function SlideModal({
         ),
       }));
     } catch {
-      // Invalid JSON, ignore
+      // Invalid JSON, keep the string but don't update formData
+      // This allows users to continue editing
     }
   };
 
@@ -330,9 +354,9 @@ export function SlideModal({
                           配置
                         </span>
                         <Textarea
-                          value={JSON.stringify(chart.data, null, 2)}
+                          value={chartDataStrings[index] || ""}
                           onChange={(e) =>
-                            updateChartData(index, e.target.value)
+                            updateChartDataString(index, e.target.value)
                           }
                           className="font-mono text-sm min-h-[150px]"
                         />

@@ -268,7 +268,7 @@ export function SlideRenderer({
 
         {/* Page number */}
         {pageNumber !== undefined && (
-          <div className={`absolute bottom-${isThumbnail ? "1" : "3"} right-${isThumbnail ? "2" : "4"} ${isThumbnail ? "text-xs" : "text-sm"} text-slate-400`}>
+          <div className={`absolute bottom-${isThumbnail ? "1" : "3"} right-${isThumbnail ? "2" : "4"} ${isThumbnail ? "text-xs" : "text-sm"} text-black`}>
             {pageNumber}
           </div>
         )}
