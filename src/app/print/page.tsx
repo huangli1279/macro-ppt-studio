@@ -5,16 +5,42 @@ import { Suspense, useEffect, useState } from "react";
 import { PPTReport } from "@/types/slide";
 import { SlideRenderer } from "@/components/slide";
 
+// Load font and wait for it to be ready
+async function loadFonts(): Promise<void> {
+  // Create a link element for Google Fonts
+  const link = document.createElement("link");
+  link.href =
+    "https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&display=swap";
+  link.rel = "stylesheet";
+  document.head.appendChild(link);
+
+  // Wait for the font to load
+  try {
+    await document.fonts.load('400 16px "Noto Sans SC"');
+    await document.fonts.load('700 16px "Noto Sans SC"');
+    await document.fonts.ready;
+  } catch (e) {
+    console.warn("Font loading failed, using fallback:", e);
+  }
+}
+
 function PrintContent() {
   const searchParams = useSearchParams();
   const [slides, setSlides] = useState<PPTReport>([]);
+  const [startIndex, setStartIndex] = useState(0);
+  const [fontsLoaded, setFontsLoaded] = useState(false);
 
   useEffect(() => {
     // Get slides from URL parameter (base64 encoded)
     const slidesParam = searchParams.get("slides");
+    const indexParam = searchParams.get("index");
+
     if (slidesParam) {
       try {
-        const decoded = atob(slidesParam);
+        // Decode base64 to binary string, then convert to UTF-8
+        const binaryString = atob(slidesParam);
+        const bytes = Uint8Array.from(binaryString, (c) => c.charCodeAt(0));
+        const decoded = new TextDecoder("utf-8").decode(bytes);
         const parsed = JSON.parse(decoded);
         setSlides(parsed);
       } catch (error) {
@@ -22,18 +48,31 @@ function PrintContent() {
       }
     }
 
-    // Signal that rendering is complete
-    const timer = setTimeout(() => {
-      // @ts-ignore - window property for puppeteer
-      window.__PRINT_READY__ = true;
-    }, 2000); // Wait for charts to render
+    if (indexParam) {
+      setStartIndex(parseInt(indexParam, 10));
+    }
 
-    return () => clearTimeout(timer);
+    // Load fonts then signal ready
+    loadFonts().then(() => {
+      setFontsLoaded(true);
+    });
   }, [searchParams]);
+
+  // Signal ready after fonts and content are loaded
+  useEffect(() => {
+    if (slides.length > 0 && fontsLoaded) {
+      // Wait a bit more for charts to render
+      const timer = setTimeout(() => {
+        // @ts-ignore - window property for puppeteer
+        window.__PRINT_READY__ = true;
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [slides, fontsLoaded]);
 
   if (slides.length === 0) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen font-sans">
         Loading...
       </div>
     );
@@ -54,7 +93,7 @@ function PrintContent() {
         >
           <SlideRenderer
             slide={slide}
-            pageNumber={index + 1}
+            pageNumber={startIndex + index + 1}
             className="w-full h-full"
           />
         </div>
@@ -74,19 +113,21 @@ function PrintContent() {
             page-break-inside: avoid;
           }
         }
+        * {
+          font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", "WenQuanYi Micro Hei", -apple-system, BlinkMacSystemFont, sans-serif !important;
+        }
         body {
           margin: 0;
           padding: 0;
-          background: #f1f5f9;
+          background: white;
         }
         .print-container {
           display: flex;
           flex-direction: column;
-          gap: 20px;
-          padding: 20px;
+          align-items: center;
         }
         .print-slide {
-          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+          flex-shrink: 0;
         }
       `}</style>
     </div>

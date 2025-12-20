@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer";
+import { PDFDocument } from "pdf-lib";
 import { PPTReport } from "@/types/slide";
 
 export async function generatePDF(
@@ -7,7 +8,12 @@ export async function generatePDF(
 ): Promise<Buffer> {
   const browser = await puppeteer.launch({
     headless: true,
-    args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    args: [
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+      "--disable-web-security",
+      "--allow-running-insecure-content",
+    ],
   });
 
   try {
@@ -17,38 +23,56 @@ export async function generatePDF(
     await page.setViewport({
       width: 1920,
       height: 1080,
-      deviceScaleFactor: 1,
+      deviceScaleFactor: 2, // Higher DPI for better quality
     });
 
-    // Encode slides as base64 for URL
-    const slidesParam = Buffer.from(JSON.stringify(slides)).toString("base64");
-    const url = `${baseUrl}/print?slides=${encodeURIComponent(slidesParam)}`;
+    // Create a merged PDF document
+    const mergedPdf = await PDFDocument.create();
 
-    // Navigate to print page
-    await page.goto(url, {
-      waitUntil: "networkidle0",
-      timeout: 60000,
-    });
+    // Generate PDF for each slide individually
+    for (let i = 0; i < slides.length; i++) {
+      // Encode single slide as base64 for URL
+      const slideParam = Buffer.from(JSON.stringify([slides[i]])).toString(
+        "base64"
+      );
+      const url = `${baseUrl}/print?slides=${encodeURIComponent(slideParam)}&index=${i}`;
 
-    // Wait for page to signal it's ready
-    await page.waitForFunction(() => {
-      // @ts-ignore
-      return window.__PRINT_READY__ === true;
-    }, { timeout: 30000 });
+      // Navigate to print page for this slide
+      await page.goto(url, {
+        waitUntil: "networkidle0",
+        timeout: 60000,
+      });
 
-    // Additional wait for charts to fully render
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+      // Wait for page to signal it's ready (fonts loaded + charts rendered)
+      await page.waitForFunction(
+        () => {
+          // @ts-ignore
+          return window.__PRINT_READY__ === true;
+        },
+        { timeout: 30000 }
+      );
 
-    // Generate PDF
-    const pdf = await page.pdf({
-      width: "1920px",
-      height: "1080px",
-      printBackground: true,
-      margin: { top: 0, right: 0, bottom: 0, left: 0 },
-      preferCSSPageSize: true,
-    });
+      // Additional wait for final rendering
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
-    return Buffer.from(pdf);
+      // Generate PDF for this single slide
+      const slidePdf = await page.pdf({
+        width: "1920px",
+        height: "1080px",
+        printBackground: true,
+        margin: { top: 0, right: 0, bottom: 0, left: 0 },
+        pageRanges: "1", // Only first page
+      });
+
+      // Load the slide PDF and copy its page to the merged document
+      const slidePdfDoc = await PDFDocument.load(slidePdf);
+      const [copiedPage] = await mergedPdf.copyPages(slidePdfDoc, [0]);
+      mergedPdf.addPage(copiedPage);
+    }
+
+    // Save the merged PDF
+    const pdfBytes = await mergedPdf.save();
+    return Buffer.from(pdfBytes);
   } finally {
     await browser.close();
   }
