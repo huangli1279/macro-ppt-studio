@@ -201,7 +201,7 @@ export function SlideModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent className="max-w-7xl sm:max-w-7xl w-[90vw] max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader className="flex flex-row items-center justify-between shrink-0">
           <DialogTitle className="flex items-center gap-3">
             {isEdit ? "编辑幻灯片" : "新增幻灯片"}
