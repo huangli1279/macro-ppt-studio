@@ -25,8 +25,11 @@ import {
   Maximize,
   Loader2,
 } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
 
 export default function Home() {
+  const { toast } = useToast();
+  
   // State
   const [slides, setSlides] = useState<PPTReport>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -96,10 +99,18 @@ export default function Home() {
         throw new Error("Failed to publish");
       }
 
-      alert("保存成功！");
+      toast({
+        variant: "success",
+        title: "保存成功",
+        description: "报告已成功保存",
+      });
     } catch (error) {
       console.error("Failed to publish:", error);
-      alert("保存失败，请重试");
+      toast({
+        variant: "destructive",
+        title: "保存失败",
+        description: "请重试或检查网络连接",
+      });
     } finally {
       setIsSaving(false);
     }
@@ -128,9 +139,18 @@ export default function Home() {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
+      toast({
+        variant: "success",
+        title: "导出成功",
+        description: "PDF文件已开始下载",
+      });
     } catch (error) {
       console.error("Failed to export PDF:", error);
-      alert("导出PDF失败，请重试");
+      toast({
+        variant: "destructive",
+        title: "导出失败",
+        description: "请重试或检查网络连接",
+      });
     } finally {
       setIsExporting(false);
     }
@@ -146,7 +166,11 @@ export default function Home() {
           setSlides(parsed);
         }
       } catch {
-        alert("JSON格式错误，无法切换到预览模式");
+        toast({
+          variant: "destructive",
+          title: "JSON格式错误",
+          description: "无法切换到预览模式，请检查JSON格式",
+        });
         return;
       }
     }
