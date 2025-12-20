@@ -34,7 +34,7 @@ export function SlidePreview({
       // Calculate scale to fit container while maintaining aspect ratio
       const scaleX = containerWidth / slideWidth;
       const scaleY = containerHeight / slideHeight;
-      const newScale = Math.min(scaleX, scaleY, 1);
+      const newScale = Math.min(scaleX, scaleY);
 
       setScale(newScale);
     };
@@ -51,7 +51,7 @@ export function SlidePreview({
     return (
       <div
         ref={containerRef}
-        className={`flex items-center justify-center bg-slate-200 rounded-lg ${className}`}
+        className={`flex items-center justify-center ${className}`}
       >
         <div className="text-slate-400 text-lg">
           选择或创建一个幻灯片
@@ -63,7 +63,7 @@ export function SlidePreview({
   return (
     <div
       ref={containerRef}
-      className={`flex items-center justify-center bg-slate-200 rounded-lg overflow-hidden ${className}`}
+      className={`flex items-center justify-center overflow-hidden ${className}`}
     >
       <div
         style={{
