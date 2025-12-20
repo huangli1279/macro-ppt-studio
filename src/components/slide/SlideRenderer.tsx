@@ -12,6 +12,7 @@ import {
 import { TableChart } from "./TableChart";
 import { EChartsChart } from "./EChartsChart";
 import { ImageChart } from "./ImageChart";
+import Image from "next/image";
 
 interface SlideRendererProps {
   slide: SlideData;
@@ -303,7 +304,7 @@ export function SlideRenderer({
       <div className={`w-full h-full flex flex-col ${padding} relative`}>
         {/* Title */}
         {title && (
-          <h1 className={`${titleSize} font-bold text-slate-800 ${titleMargin} shrink-0`}>
+          <h1 className={`${titleSize} font-bold ${titleMargin} shrink-0`} style={{ color: '#1a4f99' }}>
             {title}
           </h1>
         )}
@@ -313,10 +314,22 @@ export function SlideRenderer({
 
         {/* Page number */}
         {pageNumber !== undefined && (
-          <div className={`absolute ${isThumbnail ? "bottom-1 right-2 text-xs" : "bottom-3 right-4 text-sm"} text-black`}>
+          <div className={`absolute ${isThumbnail ? "bottom-1 right-2 text-xs" : "bottom-3 right-4 text-sm"}`} style={{ color: '#1a4f99' }}>
             {pageNumber}
           </div>
         )}
+
+        {/* WeBank Logo - Bottom Left */}
+        <div className={`absolute ${isThumbnail ? "bottom-1 left-2" : "bottom-3 left-4"} flex items-center`}>
+          <Image
+            src="/webank-logo.png"
+            alt="WeBank Logo"
+            width={isThumbnail ? 36 : 72}
+            height={isThumbnail ? 12 : 24}
+            className="object-contain"
+            unoptimized
+          />
+        </div>
       </div>
     </div>
   );
