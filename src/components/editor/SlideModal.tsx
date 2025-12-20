@@ -216,7 +216,7 @@ export function SlideModal({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 min-h-0 overflow-auto">
+        <div className="flex-1 min-h-0 overflow-auto px-6">
           {mode === "config" ? (
             <div className="space-y-6 py-4">
               {/* Title */}
