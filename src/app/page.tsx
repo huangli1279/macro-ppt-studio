@@ -229,7 +229,7 @@ export default function Home() {
         {/* Header */}
         <header className="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-4 shrink-0">
           <h1 className="text-lg font-semibold text-slate-800">
-            宏观报告Studio
+            个金宏观经济报告Studio
           </h1>
           <div className="flex items-center gap-2">
             <Tooltip>
