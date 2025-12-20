@@ -11,15 +11,17 @@ interface ImageChartProps {
 export function ImageChart({ data, className = "" }: ImageChartProps) {
   return (
     <div
-      className={`w-full h-full flex items-center justify-center ${className}`}
+      className={`w-full h-full flex items-center justify-center relative ${className}`}
     >
-      <Image
-        src={data.src}
-        alt="Chart image"
-        fill
-        className="object-contain"
-        unoptimized // Allow external images
-      />
+      <div className="relative w-full h-full">
+        <Image
+          src={data.src}
+          alt="Chart image"
+          fill
+          className="object-contain"
+          unoptimized // Allow external images
+        />
+      </div>
     </div>
   );
 }
