@@ -24,12 +24,10 @@ import {
   Eye,
   Maximize,
   Loader2,
+  Check,
 } from "lucide-react";
-import { useToast } from "@/components/ui/use-toast";
 
 export default function Home() {
-  const { toast } = useToast();
-  
   // State
   const [slides, setSlides] = useState<PPTReport>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -39,6 +37,8 @@ export default function Home() {
   const [isSaving, setIsSaving] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showSaveSuccess, setShowSaveSuccess] = useState(false);
+  const [showExportSuccess, setShowExportSuccess] = useState(false);
 
   // Modal state
   const [modalOpen, setModalOpen] = useState(false);
@@ -99,18 +99,11 @@ export default function Home() {
         throw new Error("Failed to publish");
       }
 
-      toast({
-        variant: "success",
-        title: "保存成功",
-        description: "报告已成功保存",
-      });
+      setShowSaveSuccess(true);
+      setTimeout(() => setShowSaveSuccess(false), 1000);
     } catch (error) {
       console.error("Failed to publish:", error);
-      toast({
-        variant: "destructive",
-        title: "保存失败",
-        description: "请重试或检查网络连接",
-      });
+      alert("保存失败，请重试或检查网络连接");
     } finally {
       setIsSaving(false);
     }
@@ -139,18 +132,12 @@ export default function Home() {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      toast({
-        variant: "success",
-        title: "导出成功",
-        description: "PDF文件已开始下载",
-      });
+      
+      setShowExportSuccess(true);
+      setTimeout(() => setShowExportSuccess(false), 1000);
     } catch (error) {
       console.error("Failed to export PDF:", error);
-      toast({
-        variant: "destructive",
-        title: "导出失败",
-        description: "请重试或检查网络连接",
-      });
+      alert("导出失败，请重试或检查网络连接");
     } finally {
       setIsExporting(false);
     }
@@ -166,11 +153,7 @@ export default function Home() {
           setSlides(parsed);
         }
       } catch {
-        toast({
-          variant: "destructive",
-          title: "JSON格式错误",
-          description: "无法切换到预览模式，请检查JSON格式",
-        });
+        alert("JSON格式错误，无法切换到预览模式，请检查JSON格式");
         return;
       }
     }
@@ -256,23 +239,30 @@ export default function Home() {
             个金宏观经济报告Studio
           </h1>
           <div className="flex items-center gap-2">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={handlePublish}
-                  disabled={isSaving}
-                >
-                  {isSaving ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Save className="h-4 w-4" />
-                  )}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>保存</TooltipContent>
-            </Tooltip>
+            <div className="flex items-center gap-2">
+              {showSaveSuccess && (
+                <span className="text-sm text-slate-800 font-medium animate-in fade-in slide-in-from-right-2">
+                  保存成功
+                </span>
+              )}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={handlePublish}
+                    disabled={isSaving}
+                  >
+                    {isSaving ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Save className="h-4 w-4" />
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>保存</TooltipContent>
+              </Tooltip>
+            </div>
 
             <Tooltip>
               <TooltipTrigger asChild>
@@ -284,6 +274,8 @@ export default function Home() {
                 >
                   {isExporting ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : showExportSuccess ? (
+                    <Check className="h-4 w-4 text-slate-800" />
                   ) : (
                     <FileDown className="h-4 w-4" />
                   )}
