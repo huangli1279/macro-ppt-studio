@@ -26,10 +26,10 @@ export function EChartsChart({ data, className = "" }: EChartsChartProps) {
     const mergedOption: echarts.EChartsOption = {
       ...option,
       grid: {
-        left: 10,
-        right: 10,
-        top: 10,
-        bottom: 10,
+        left: 8,
+        right: 8,
+        top: 8,
+        bottom: 8,
         containLabel: true,
         ...(option.grid as object || {}),
       },
@@ -61,7 +61,7 @@ export function EChartsChart({ data, className = "" }: EChartsChartProps) {
   return (
     <div
       ref={chartRef}
-      className={`w-full h-full min-h-[200px] ${className}`}
+      className={`w-full h-full ${className}`}
     />
   );
 }

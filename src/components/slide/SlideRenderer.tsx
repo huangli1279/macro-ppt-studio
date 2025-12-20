@@ -137,26 +137,30 @@ export function SlideRenderer({
     // Layout: 3 content + 3 charts
     if (contentCount === 3 && chartCount === 3) {
       return (
-        <div className="flex-1 flex gap-4">
-          {/* Left column: 2 content + 2 charts */}
-          <div className="flex-1 flex flex-col gap-3">
-            <div className="space-y-1">
-              <ContentItem text={content[0]} />
-              <ContentItem text={content[1]} />
+        <div className="flex-1 flex flex-col gap-3">
+          {/* Content row: 论点1+论点2 在左，论点3 在右 */}
+          <div className="flex gap-4">
+            <div className="flex-1 space-y-1">
+              <ContentItem text={content[0]} isThumbnail={isThumbnail} />
+              <ContentItem text={content[1]} isThumbnail={isThumbnail} />
             </div>
-            <div className="flex-1 min-h-0 overflow-hidden">
-              <ChartRenderer chart={charts[0]} />
-            </div>
-            <div className="flex-1 min-h-0 overflow-hidden">
-              <ChartRenderer chart={charts[1]} />
+            <div className="flex-1">
+              <ContentItem text={content[2]} isThumbnail={isThumbnail} />
             </div>
           </div>
-          {/* Right column: 1 content + 1 tall chart */}
-          <div className="flex-1 flex flex-col gap-3">
-            <div>
-              <ContentItem text={content[2]} />
+          {/* Charts area: 左列两个小图表(上下)，右列一个大图表 */}
+          <div className="flex-1 min-h-0 flex gap-4">
+            {/* 左列：图表1(上) + 图表2(下) - 使用 flex 确保等高 */}
+            <div className="flex-1 flex flex-col gap-3 min-h-0">
+              <div className="flex-1 overflow-hidden min-h-0">
+                <ChartRenderer chart={charts[0]} />
+              </div>
+              <div className="flex-1 overflow-hidden min-h-0">
+                <ChartRenderer chart={charts[1]} />
+              </div>
             </div>
-            <div className="flex-1 min-h-0 overflow-hidden">
+            {/* 右列：图表3 占满整个高度 */}
+            <div className="flex-1 overflow-hidden min-h-0">
               <ChartRenderer chart={charts[2]} />
             </div>
           </div>
@@ -179,19 +183,23 @@ export function SlideRenderer({
               <ContentItem text={content[3]} />
             </div>
           </div>
-          {/* Charts grid 2x2 */}
-          <div className="flex-1 min-h-0 grid grid-cols-2 grid-rows-2 gap-3">
-            <div className="overflow-hidden">
-              <ChartRenderer chart={charts[0]} />
+          {/* Charts grid 2x2 - 使用 flex 确保高度一致 */}
+          <div className="flex-1 min-h-0 flex flex-col gap-3">
+            <div className="flex-1 flex gap-3 min-h-0">
+              <div className="flex-1 overflow-hidden min-h-0">
+                <ChartRenderer chart={charts[0]} />
+              </div>
+              <div className="flex-1 overflow-hidden min-h-0">
+                <ChartRenderer chart={charts[2]} />
+              </div>
             </div>
-            <div className="overflow-hidden">
-              <ChartRenderer chart={charts[2]} />
-            </div>
-            <div className="overflow-hidden">
-              <ChartRenderer chart={charts[1]} />
-            </div>
-            <div className="overflow-hidden">
-              <ChartRenderer chart={charts[3]} />
+            <div className="flex-1 flex gap-3 min-h-0">
+              <div className="flex-1 overflow-hidden min-h-0">
+                <ChartRenderer chart={charts[1]} />
+              </div>
+              <div className="flex-1 overflow-hidden min-h-0">
+                <ChartRenderer chart={charts[3]} />
+              </div>
             </div>
           </div>
         </div>
@@ -217,28 +225,60 @@ export function SlideRenderer({
         )}
         {/* Charts section */}
         {chartCount > 0 && (
-          <div
-            className={`flex-1 min-h-0 grid gap-4 ${
-              chartCount === 1
-                ? "grid-cols-1"
-                : chartCount === 2
-                ? "grid-cols-2"
-                : chartCount === 3
-                ? "grid-cols-2"
-                : "grid-cols-2 grid-rows-2"
-            }`}
-          >
-            {charts.map((chart, index) => (
-              <div
-                key={index}
-                className={`overflow-hidden ${
-                  chartCount === 3 && index === 2 ? "col-span-2" : ""
-                }`}
-              >
-                <ChartRenderer chart={chart} />
+          <>
+            {chartCount === 1 && (
+              <div className="flex-1 min-h-0 overflow-hidden">
+                <ChartRenderer chart={charts[0]} />
               </div>
-            ))}
-          </div>
+            )}
+            {chartCount === 2 && (
+              <div className="flex-1 min-h-0 flex gap-4">
+                <div className="flex-1 overflow-hidden">
+                  <ChartRenderer chart={charts[0]} />
+                </div>
+                <div className="flex-1 overflow-hidden">
+                  <ChartRenderer chart={charts[1]} />
+                </div>
+              </div>
+            )}
+            {chartCount === 3 && (
+              <div className="flex-1 min-h-0 flex gap-4">
+                {/* 左列：前两个图表上下排列 */}
+                <div className="flex-1 flex flex-col gap-4 min-h-0">
+                  <div className="flex-1 overflow-hidden min-h-0">
+                    <ChartRenderer chart={charts[0]} />
+                  </div>
+                  <div className="flex-1 overflow-hidden min-h-0">
+                    <ChartRenderer chart={charts[1]} />
+                  </div>
+                </div>
+                {/* 右列：第3个图表占满高度 */}
+                <div className="flex-1 overflow-hidden min-h-0">
+                  <ChartRenderer chart={charts[2]} />
+                </div>
+              </div>
+            )}
+            {chartCount === 4 && (
+              <div className="flex-1 min-h-0 flex flex-col gap-4">
+                <div className="flex-1 flex gap-4 min-h-0">
+                  <div className="flex-1 overflow-hidden min-h-0">
+                    <ChartRenderer chart={charts[0]} />
+                  </div>
+                  <div className="flex-1 overflow-hidden min-h-0">
+                    <ChartRenderer chart={charts[1]} />
+                  </div>
+                </div>
+                <div className="flex-1 flex gap-4 min-h-0">
+                  <div className="flex-1 overflow-hidden min-h-0">
+                    <ChartRenderer chart={charts[2]} />
+                  </div>
+                  <div className="flex-1 overflow-hidden min-h-0">
+                    <ChartRenderer chart={charts[3]} />
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
     );
