@@ -19,6 +19,7 @@ interface SlideRendererProps {
   className?: string;
   scale?: number;
   isThumbnail?: boolean;
+  isFullscreen?: boolean;
 }
 
 // Render a single chart based on type
@@ -36,9 +37,9 @@ function ChartRenderer({ chart }: { chart: ChartConfig }) {
 }
 
 // Content item component
-function ContentItem({ text, isThumbnail }: { text: string; isThumbnail?: boolean }) {
+function ContentItem({ text, textSize }: { text: string; textSize?: string }) {
   return (
-    <div className={`flex items-start gap-2 text-slate-700 ${isThumbnail ? "text-xs" : ""}`}>
+    <div className={`flex items-start gap-2 text-slate-700 ${textSize || ""}`}>
       <span className="text-slate-400 select-none">-</span>
       <span className="leading-relaxed">{text}</span>
     </div>
@@ -51,14 +52,16 @@ export function SlideRenderer({
   className = "",
   scale = 1,
   isThumbnail = false,
+  isFullscreen = false,
 }: SlideRendererProps) {
   const { title, content, charts } = slide;
   const contentCount = content.length;
   const chartCount = charts.length;
   
-  // Adjust sizes for thumbnail view
-  const titleSize = isThumbnail ? "text-sm" : "text-2xl";
-  const contentTextSize = isThumbnail ? "text-xs" : "text-base";
+  // Adjust sizes based on view mode
+  // Priority: isThumbnail > isFullscreen > normal
+  const titleSize = isThumbnail ? "text-sm" : isFullscreen ? "text-3xl" : "text-lg";
+  const contentTextSize = isThumbnail ? "text-xs" : isFullscreen ? "text-lg" : "text-sm";
   const padding = isThumbnail ? "p-2" : "p-6";
   const gap = isThumbnail ? "gap-1" : "gap-4";
 
@@ -82,15 +85,15 @@ export function SlideRenderer({
             <div className="flex gap-8">
               {contentCount === 1 ? (
                 <div className="flex-1">
-                  <ContentItem text={content[0]} />
+                  <ContentItem text={content[0]} textSize={contentTextSize} />
                 </div>
               ) : (
                 <>
                   <div className="flex-1">
-                    <ContentItem text={content[0]} />
+                    <ContentItem text={content[0]} textSize={contentTextSize} />
                   </div>
                   <div className="flex-1">
-                    <ContentItem text={content[1]} />
+                    <ContentItem text={content[1]} textSize={contentTextSize} />
                   </div>
                 </>
               )}
@@ -114,10 +117,10 @@ export function SlideRenderer({
           {contentCount > 0 && (
             <div className="flex gap-8">
               <div className="flex-1">
-                {content[0] && <ContentItem text={content[0]} />}
+                {content[0] && <ContentItem text={content[0]} textSize={contentTextSize} />}
               </div>
               <div className="flex-1">
-                {content[1] && <ContentItem text={content[1]} />}
+                {content[1] && <ContentItem text={content[1]} textSize={contentTextSize} />}
               </div>
             </div>
           )}
@@ -141,11 +144,11 @@ export function SlideRenderer({
           {/* Content row: 论点1+论点2 在左，论点3 在右 */}
           <div className="flex gap-4">
             <div className="flex-1 space-y-1">
-              <ContentItem text={content[0]} isThumbnail={isThumbnail} />
-              <ContentItem text={content[1]} isThumbnail={isThumbnail} />
+              <ContentItem text={content[0]} textSize={contentTextSize} />
+              <ContentItem text={content[1]} textSize={contentTextSize} />
             </div>
             <div className="flex-1">
-              <ContentItem text={content[2]} isThumbnail={isThumbnail} />
+              <ContentItem text={content[2]} textSize={contentTextSize} />
             </div>
           </div>
           {/* Charts area: 左列两个小图表(上下)，右列一个大图表 */}
@@ -175,12 +178,12 @@ export function SlideRenderer({
           {/* Content row */}
           <div className="flex gap-8">
             <div className="flex-1 space-y-1">
-              <ContentItem text={content[0]} />
-              <ContentItem text={content[1]} />
+              <ContentItem text={content[0]} textSize={contentTextSize} />
+              <ContentItem text={content[1]} textSize={contentTextSize} />
             </div>
             <div className="flex-1 space-y-1">
-              <ContentItem text={content[2]} />
-              <ContentItem text={content[3]} />
+              <ContentItem text={content[2]} textSize={contentTextSize} />
+              <ContentItem text={content[3]} textSize={contentTextSize} />
             </div>
           </div>
           {/* Charts grid 2x2 - 使用 flex 确保高度一致 */}
@@ -218,7 +221,7 @@ export function SlideRenderer({
           >
             {content.map((text, index) => (
               <div key={index}>
-                <ContentItem text={text} />
+                <ContentItem text={text} textSize={contentTextSize} />
               </div>
             ))}
           </div>
@@ -298,7 +301,7 @@ export function SlideRenderer({
       <div className={`w-full h-full flex flex-col ${padding} relative`}>
         {/* Title */}
         {title && (
-          <h1 className={`${titleSize} font-bold text-slate-800 mb-${isThumbnail ? "2" : "4"} shrink-0`}>
+          <h1 className={`${titleSize} font-bold text-slate-800 mb-${isThumbnail ? "1" : "2"} shrink-0`}>
             {title}
           </h1>
         )}

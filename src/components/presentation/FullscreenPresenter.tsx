@@ -171,6 +171,7 @@ export function FullscreenPresenter({
               slide={currentSlide}
               pageNumber={currentIndex + 1}
               className="w-full h-full"
+              isFullscreen={true}
             />
           )}
         </div>
