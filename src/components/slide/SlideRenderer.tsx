@@ -98,7 +98,7 @@ export function SlideRenderer({
           )}
           {/* Chart area */}
           {chartCount === 1 && (
-            <div className="flex-1 min-h-0 rounded-xl border border-slate-200 overflow-hidden">
+            <div className="flex-1 min-h-0 overflow-hidden">
               <ChartRenderer chart={charts[0]} />
             </div>
           )}
@@ -123,10 +123,10 @@ export function SlideRenderer({
           )}
           {/* Charts row */}
           <div className="flex-1 min-h-0 flex gap-4">
-            <div className="flex-1 rounded-xl border border-slate-200 overflow-hidden">
+            <div className="flex-1 overflow-hidden">
               <ChartRenderer chart={charts[0]} />
             </div>
-            <div className="flex-1 rounded-xl border border-slate-200 overflow-hidden">
+            <div className="flex-1 overflow-hidden">
               <ChartRenderer chart={charts[1]} />
             </div>
           </div>
@@ -144,10 +144,10 @@ export function SlideRenderer({
               <ContentItem text={content[0]} />
               <ContentItem text={content[1]} />
             </div>
-            <div className="flex-1 min-h-0 rounded-xl border border-slate-200 overflow-hidden">
+            <div className="flex-1 min-h-0 overflow-hidden">
               <ChartRenderer chart={charts[0]} />
             </div>
-            <div className="flex-1 min-h-0 rounded-xl border border-slate-200 overflow-hidden">
+            <div className="flex-1 min-h-0 overflow-hidden">
               <ChartRenderer chart={charts[1]} />
             </div>
           </div>
@@ -156,7 +156,7 @@ export function SlideRenderer({
             <div>
               <ContentItem text={content[2]} />
             </div>
-            <div className="flex-1 min-h-0 rounded-xl border border-slate-200 overflow-hidden">
+            <div className="flex-1 min-h-0 overflow-hidden">
               <ChartRenderer chart={charts[2]} />
             </div>
           </div>
@@ -181,16 +181,16 @@ export function SlideRenderer({
           </div>
           {/* Charts grid 2x2 */}
           <div className="flex-1 min-h-0 grid grid-cols-2 grid-rows-2 gap-3">
-            <div className="rounded-xl border border-slate-200 overflow-hidden">
+            <div className="overflow-hidden">
               <ChartRenderer chart={charts[0]} />
             </div>
-            <div className="rounded-xl border border-slate-200 overflow-hidden">
+            <div className="overflow-hidden">
               <ChartRenderer chart={charts[2]} />
             </div>
-            <div className="rounded-xl border border-slate-200 overflow-hidden">
+            <div className="overflow-hidden">
               <ChartRenderer chart={charts[1]} />
             </div>
-            <div className="rounded-xl border border-slate-200 overflow-hidden">
+            <div className="overflow-hidden">
               <ChartRenderer chart={charts[3]} />
             </div>
           </div>
@@ -231,7 +231,7 @@ export function SlideRenderer({
             {charts.map((chart, index) => (
               <div
                 key={index}
-                className={`rounded-xl border border-slate-200 overflow-hidden ${
+                className={`overflow-hidden ${
                   chartCount === 3 && index === 2 ? "col-span-2" : ""
                 }`}
               >

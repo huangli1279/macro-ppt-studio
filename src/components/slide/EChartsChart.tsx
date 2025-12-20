@@ -26,10 +26,10 @@ export function EChartsChart({ data, className = "" }: EChartsChartProps) {
     const mergedOption: echarts.EChartsOption = {
       ...option,
       grid: {
-        left: 40,
-        right: 40,
-        top: 40,
-        bottom: 40,
+        left: 10,
+        right: 10,
+        top: 10,
+        bottom: 10,
         containLabel: true,
         ...(option.grid as object || {}),
       },
