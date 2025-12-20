@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { PPTReport } from "@/types/slide";
 import { SlideRenderer } from "@/components/slide";
-import { X, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface FullscreenPresenterProps {
   slides: PPTReport;
@@ -17,7 +16,7 @@ export function FullscreenPresenter({
   onClose,
 }: FullscreenPresenterProps) {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
-  const [fullscreenError, setFullscreenError] = useState(false);
+  const [isFullscreenActive, setIsFullscreenActive] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Handle wheel navigation
@@ -34,6 +33,23 @@ export function FullscreenPresenter({
     },
     [slides.length]
   );
+
+  // Request fullscreen on the container element
+  const requestFullscreen = useCallback(async () => {
+    const container = containerRef.current;
+    if (!container) return;
+    
+    try {
+      if (container.requestFullscreen) {
+        await container.requestFullscreen();
+      } else if ((container as HTMLDivElement & { webkitRequestFullscreen?: () => Promise<void> }).webkitRequestFullscreen) {
+        // Safari support
+        await (container as HTMLDivElement & { webkitRequestFullscreen: () => Promise<void> }).webkitRequestFullscreen();
+      }
+    } catch (error) {
+      console.warn("Could not enter fullscreen:", error);
+    }
+  }, []);
 
   // Handle keyboard navigation
   const handleKeyDown = useCallback(
@@ -53,7 +69,15 @@ export function FullscreenPresenter({
           setCurrentIndex((prev) => Math.max(prev - 1, 0));
           break;
         case "Escape":
-          onClose();
+          // Exit fullscreen will trigger onClose via fullscreenchange event
+          if (document.fullscreenElement) {
+            document.exitFullscreen().catch(() => {
+              // If exitFullscreen fails, close directly
+              onClose();
+            });
+          } else {
+            onClose();
+          }
           break;
         case "Home":
           e.preventDefault();
@@ -63,44 +87,50 @@ export function FullscreenPresenter({
           e.preventDefault();
           setCurrentIndex(slides.length - 1);
           break;
+        case "f":
+        case "F":
+          e.preventDefault();
+          if (!document.fullscreenElement) {
+            requestFullscreen();
+          }
+          break;
       }
     },
-    [slides.length, onClose]
+    [slides.length, onClose, requestFullscreen]
   );
 
-  // Enter fullscreen mode
+  // Monitor fullscreen state - exit presenter when leaving fullscreen
   useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
+    // Check initial fullscreen state
+    const initialFullscreen = !!document.fullscreenElement;
+    setIsFullscreenActive(initialFullscreen);
 
-    // Request fullscreen with proper error handling
-    const enterFullscreen = async () => {
-      try {
-        if (container.requestFullscreen) {
-          await container.requestFullscreen();
-          setFullscreenError(false);
-        }
-      } catch (error) {
-        console.error("Fullscreen request failed:", error);
-        setFullscreenError(true);
-        // Continue without fullscreen - don't close the presenter
-      }
-    };
-
-    enterFullscreen();
-
-    // Handle fullscreen exit
+    // Handle fullscreen change events
     const handleFullscreenChange = () => {
-      if (!document.fullscreenElement && !fullscreenError) {
+      const isNowFullscreen = !!document.fullscreenElement;
+      setIsFullscreenActive(isNowFullscreen);
+      
+      // When exiting fullscreen, close the presenter and return to main page
+      if (!isNowFullscreen) {
         onClose();
       }
     };
 
     document.addEventListener("fullscreenchange", handleFullscreenChange);
+    document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
+
+    // Cleanup
     return () => {
       document.removeEventListener("fullscreenchange", handleFullscreenChange);
+      document.removeEventListener("webkitfullscreenchange", handleFullscreenChange);
+      // Exit fullscreen on unmount if still active
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {
+          // Ignore errors on cleanup
+        });
+      }
     };
-  }, [onClose, fullscreenError]);
+  }, [onClose]);
 
   // Add event listeners
   useEffect(() => {
@@ -120,47 +150,13 @@ export function FullscreenPresenter({
 
   return (
     <div
+      id="fullscreen-presenter-container"
       ref={containerRef}
       className="fixed inset-0 z-50 bg-black flex items-center justify-center"
     >
-      {/* Fullscreen error notification */}
-      {fullscreenError && (
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 bg-yellow-500/90 text-black px-4 py-2 rounded-lg text-sm">
-          无法进入全屏模式，继续使用窗口模式演示
-        </div>
-      )}
-
-      {/* Close button */}
-      <button
-        className="absolute top-4 right-4 z-10 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
-        onClick={onClose}
-      >
-        <X className="h-6 w-6 text-white" />
-      </button>
-
-      {/* Navigation buttons */}
-      {currentIndex > 0 && (
-        <button
-          className="absolute left-4 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
-          onClick={() => setCurrentIndex((prev) => prev - 1)}
-        >
-          <ChevronLeft className="h-8 w-8 text-white" />
-        </button>
-      )}
-
-      {currentIndex < slides.length - 1 && (
-        <button
-          className="absolute right-4 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
-          onClick={() => setCurrentIndex((prev) => prev + 1)}
-        >
-          <ChevronRight className="h-8 w-8 text-white" />
-        </button>
-      )}
-
       {/* Slide */}
       <div
-        className="w-full h-full flex items-center justify-center p-8"
-        style={{ aspectRatio: "16/9" }}
+        className="w-full h-full flex items-center justify-center"
       >
         <div
           className="w-full h-full max-w-[100vw] max-h-[100vh]"
@@ -178,24 +174,6 @@ export function FullscreenPresenter({
             />
           )}
         </div>
-      </div>
-
-      {/* Progress indicator */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-        {slides.map((_, index) => (
-          <button
-            key={index}
-            className={`w-2 h-2 rounded-full transition-colors ${
-              index === currentIndex ? "bg-white" : "bg-white/30"
-            }`}
-            onClick={() => setCurrentIndex(index)}
-          />
-        ))}
-      </div>
-
-      {/* Page number */}
-      <div className="absolute bottom-4 right-4 text-white/70 text-sm">
-        {currentIndex + 1} / {slides.length}
       </div>
     </div>
   );

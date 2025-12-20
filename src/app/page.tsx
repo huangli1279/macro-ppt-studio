@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { flushSync } from "react-dom";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -190,9 +191,26 @@ export default function Home() {
     }
   };
 
-  // Fullscreen
+  // Fullscreen - open presenter and request fullscreen immediately
   const handleFullscreen = () => {
-    setIsFullscreen(true);
+    // Use flushSync to force synchronous render, so the presenter container exists
+    // in the same user gesture call stack
+    flushSync(() => {
+      setIsFullscreen(true);
+    });
+
+    // Now the presenter is rendered, request fullscreen on its container
+    const container = document.getElementById("fullscreen-presenter-container");
+    if (container) {
+      if (container.requestFullscreen) {
+        container.requestFullscreen().catch((err) => {
+          console.warn("Could not enter fullscreen:", err);
+        });
+      } else if ((container as HTMLElement & { webkitRequestFullscreen?: () => Promise<void> }).webkitRequestFullscreen) {
+        // Safari support
+        (container as HTMLElement & { webkitRequestFullscreen: () => Promise<void> }).webkitRequestFullscreen();
+      }
+    }
   };
 
   const currentSlide = slides[selectedIndex] || null;
