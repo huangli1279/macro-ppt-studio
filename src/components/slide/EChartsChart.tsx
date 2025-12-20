@@ -21,8 +21,22 @@ export function EChartsChart({ data, className = "" }: EChartsChartProps) {
       chartInstance.current = echarts.init(chartRef.current);
     }
 
+    // Merge default grid settings to maximize chart space
+    const option = data as echarts.EChartsOption;
+    const mergedOption: echarts.EChartsOption = {
+      ...option,
+      grid: {
+        left: 40,
+        right: 40,
+        top: 40,
+        bottom: 40,
+        containLabel: true,
+        ...(option.grid as object || {}),
+      },
+    };
+
     // Set options
-    chartInstance.current.setOption(data as echarts.EChartsOption, true);
+    chartInstance.current.setOption(mergedOption, true);
 
     // Handle resize
     const resizeObserver = new ResizeObserver(() => {
