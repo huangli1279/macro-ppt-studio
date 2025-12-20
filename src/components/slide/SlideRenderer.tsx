@@ -18,6 +18,7 @@ interface SlideRendererProps {
   pageNumber?: number;
   className?: string;
   scale?: number;
+  isThumbnail?: boolean;
 }
 
 // Render a single chart based on type
@@ -35,9 +36,9 @@ function ChartRenderer({ chart }: { chart: ChartConfig }) {
 }
 
 // Content item component
-function ContentItem({ text }: { text: string }) {
+function ContentItem({ text, isThumbnail }: { text: string; isThumbnail?: boolean }) {
   return (
-    <div className="flex items-start gap-2 text-slate-700">
+    <div className={`flex items-start gap-2 text-slate-700 ${isThumbnail ? "text-xs" : ""}`}>
       <span className="text-slate-400 select-none">-</span>
       <span className="leading-relaxed">{text}</span>
     </div>
@@ -49,10 +50,17 @@ export function SlideRenderer({
   pageNumber,
   className = "",
   scale = 1,
+  isThumbnail = false,
 }: SlideRendererProps) {
   const { title, content, charts } = slide;
   const contentCount = content.length;
   const chartCount = charts.length;
+  
+  // Adjust sizes for thumbnail view
+  const titleSize = isThumbnail ? "text-sm" : "text-2xl";
+  const contentTextSize = isThumbnail ? "text-xs" : "text-base";
+  const padding = isThumbnail ? "p-2" : "p-6";
+  const gap = isThumbnail ? "gap-1" : "gap-4";
 
   // Determine layout based on content and chart counts
   const renderLayout = () => {
@@ -240,15 +248,17 @@ export function SlideRenderer({
     <div
       className={`bg-white rounded-lg shadow-lg overflow-hidden ${className}`}
       style={{
+        width: isThumbnail ? "960px" : "100%",
+        height: isThumbnail ? "540px" : "100%",
         aspectRatio: "16/9",
         transform: scale !== 1 ? `scale(${scale})` : undefined,
         transformOrigin: "top left",
       }}
     >
-      <div className="w-full h-full flex flex-col p-6">
+      <div className={`w-full h-full flex flex-col ${padding} relative`}>
         {/* Title */}
         {title && (
-          <h1 className="text-2xl font-bold text-slate-800 mb-4 shrink-0">
+          <h1 className={`${titleSize} font-bold text-slate-800 mb-${isThumbnail ? "2" : "4"} shrink-0`}>
             {title}
           </h1>
         )}
@@ -258,7 +268,7 @@ export function SlideRenderer({
 
         {/* Page number */}
         {pageNumber !== undefined && (
-          <div className="absolute bottom-3 right-4 text-sm text-slate-400">
+          <div className={`absolute bottom-${isThumbnail ? "1" : "3"} right-${isThumbnail ? "2" : "4"} ${isThumbnail ? "text-xs" : "text-sm"} text-slate-400`}>
             {pageNumber}
           </div>
         )}

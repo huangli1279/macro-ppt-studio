@@ -77,9 +77,17 @@ function SortableThumbnail({
       onClick={onClick}
     >
       {/* Thumbnail preview */}
-      <div className="w-full aspect-video bg-white overflow-hidden pointer-events-none">
-        <div className="w-[960px] h-[540px] origin-top-left scale-[0.133]">
-          <SlideRenderer slide={slide} pageNumber={index + 1} />
+      <div className="w-full aspect-video bg-white overflow-hidden pointer-events-none relative">
+        <div 
+          className="absolute inset-0 flex items-center justify-center"
+          style={{
+            transform: 'scale(0.133)',
+            transformOrigin: 'center center',
+          }}
+        >
+          <div style={{ width: '960px', height: '540px' }}>
+            <SlideRenderer slide={slide} pageNumber={index + 1} isThumbnail />
+          </div>
         </div>
       </div>
 
@@ -202,21 +210,23 @@ export function ThumbnailPanel({
   return (
     <div className="w-32 flex flex-col bg-slate-100 border-r border-slate-200">
       <ScrollArea className="flex-1">
-        <div className="p-2 space-y-1">
-          {/* Add button at top */}
-          <button
-            className="w-full aspect-video rounded-lg border-2 border-dashed border-slate-300 hover:border-blue-400 hover:bg-blue-50 transition-colors flex items-center justify-center"
-            onClick={() => onAddSlide(0)}
-          >
-            <Plus className="h-6 w-6 text-slate-400" />
-          </button>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <div className="p-2 space-y-1">
+            {/* Add button at top - only show when no slides */}
+            {slides.length === 0 && (
+              <button
+                className="w-full aspect-video rounded-lg border-2 border-dashed border-slate-300 hover:border-blue-400 hover:bg-blue-50 transition-colors flex items-center justify-center"
+                onClick={() => onAddSlide(0)}
+              >
+                <Plus className="h-6 w-6 text-slate-400" />
+              </button>
+            )}
 
-          {/* Sortable slides */}
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={handleDragEnd}
-          >
+            {/* Sortable slides */}
             <SortableContext
               items={slides.map((_, i) => `slide-${i}`)}
               strategy={verticalListSortingStrategy}
@@ -238,18 +248,18 @@ export function ThumbnailPanel({
                 </div>
               ))}
             </SortableContext>
-          </DndContext>
 
-          {/* Add button at bottom if there are slides */}
-          {slides.length > 0 && (
-            <button
-              className="w-full aspect-video rounded-lg border-2 border-dashed border-slate-300 hover:border-blue-400 hover:bg-blue-50 transition-colors flex items-center justify-center"
-              onClick={() => onAddSlide()}
-            >
-              <Plus className="h-6 w-6 text-slate-400" />
-            </button>
-          )}
-        </div>
+            {/* Add button at bottom if there are slides */}
+            {slides.length > 0 && (
+              <button
+                className="w-full aspect-video rounded-lg border-2 border-dashed border-slate-300 hover:border-blue-400 hover:bg-blue-50 transition-colors flex items-center justify-center"
+                onClick={() => onAddSlide()}
+              >
+                <Plus className="h-6 w-6 text-slate-400" />
+              </button>
+            )}
+          </div>
+        </DndContext>
       </ScrollArea>
     </div>
   );

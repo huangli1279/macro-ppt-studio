@@ -17,6 +17,7 @@ export function FullscreenPresenter({
   onClose,
 }: FullscreenPresenterProps) {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
+  const [fullscreenError, setFullscreenError] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Handle wheel navigation
@@ -72,14 +73,25 @@ export function FullscreenPresenter({
     const container = containerRef.current;
     if (!container) return;
 
-    // Request fullscreen
-    if (container.requestFullscreen) {
-      container.requestFullscreen().catch(console.error);
-    }
+    // Request fullscreen with proper error handling
+    const enterFullscreen = async () => {
+      try {
+        if (container.requestFullscreen) {
+          await container.requestFullscreen();
+          setFullscreenError(false);
+        }
+      } catch (error) {
+        console.error("Fullscreen request failed:", error);
+        setFullscreenError(true);
+        // Continue without fullscreen - don't close the presenter
+      }
+    };
+
+    enterFullscreen();
 
     // Handle fullscreen exit
     const handleFullscreenChange = () => {
-      if (!document.fullscreenElement) {
+      if (!document.fullscreenElement && !fullscreenError) {
         onClose();
       }
     };
@@ -88,7 +100,7 @@ export function FullscreenPresenter({
     return () => {
       document.removeEventListener("fullscreenchange", handleFullscreenChange);
     };
-  }, [onClose]);
+  }, [onClose, fullscreenError]);
 
   // Add event listeners
   useEffect(() => {
@@ -111,6 +123,13 @@ export function FullscreenPresenter({
       ref={containerRef}
       className="fixed inset-0 z-50 bg-black flex items-center justify-center"
     >
+      {/* Fullscreen error notification */}
+      {fullscreenError && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 bg-yellow-500/90 text-black px-4 py-2 rounded-lg text-sm">
+          无法进入全屏模式，继续使用窗口模式演示
+        </div>
+      )}
+
       {/* Close button */}
       <button
         className="absolute top-4 right-4 z-10 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
