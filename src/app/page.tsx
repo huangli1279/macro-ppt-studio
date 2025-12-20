@@ -96,10 +96,10 @@ export default function Home() {
         throw new Error("Failed to publish");
       }
 
-      alert("发布成功！");
+      alert("保存成功！");
     } catch (error) {
       console.error("Failed to publish:", error);
-      alert("发布失败，请重试");
+      alert("保存失败，请重试");
     } finally {
       setIsSaving(false);
     }
