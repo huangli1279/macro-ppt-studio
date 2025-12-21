@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { flushSync } from "react-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -45,6 +45,32 @@ export default function Home() {
   const [editingSlide, setEditingSlide] = useState<SlideData | undefined>();
   const [editingIndex, setEditingIndex] = useState<number | undefined>();
   const [insertIndex, setInsertIndex] = useState<number | undefined>();
+
+  // Ref for preview container to handle wheel events
+  const previewContainerRef = useRef<HTMLDivElement>(null);
+
+  // Handle wheel navigation in preview mode
+  useEffect(() => {
+    const container = previewContainerRef.current;
+    if (!container || viewMode !== "preview" || slides.length === 0) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      if (e.deltaY > 0) {
+        // Scroll down - next slide
+        setSelectedIndex((prev) => Math.min(prev + 1, slides.length - 1));
+      } else if (e.deltaY < 0) {
+        // Scroll up - previous slide
+        setSelectedIndex((prev) => Math.max(prev - 1, 0));
+      }
+    };
+
+    container.addEventListener("wheel", handleWheel, { passive: false });
+    
+    return () => {
+      container.removeEventListener("wheel", handleWheel);
+    };
+  }, [viewMode, slides.length]);
 
   // Load initial data
   useEffect(() => {
@@ -334,7 +360,7 @@ export default function Home() {
               />
 
               {/* Slide preview */}
-              <div className="flex-1 p-6">
+              <div ref={previewContainerRef} className="flex-1 p-6">
                 <SlidePreview
                   slide={currentSlide}
                   pageNumber={
