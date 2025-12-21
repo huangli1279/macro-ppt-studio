@@ -14,9 +14,9 @@
 
 ## 技术栈
 
-- **框架**: Next.js 15 (App Router)
-- **样式**: Tailwind CSS + shadcn/ui
-- **数据库**: Drizzle ORM + SQLite
+- **框架**: Next.js 16 (App Router)
+- **样式**: Tailwind CSS v4 + shadcn/ui
+- **数据库**: Drizzle ORM + SQLite (开发) / MySQL (生产)
 - **代码编辑器**: Monaco Editor
 - **图表**: ECharts
 - **PDF导出**: Puppeteer
@@ -29,6 +29,16 @@
 ```bash
 npm install
 ```
+
+### 配置环境变量
+
+复制环境变量模板文件：
+
+```bash
+cp .env.example .env
+```
+
+开发环境默认使用 SQLite，无需修改配置。生产环境配置请参考 [数据库配置文档](./docs/database-config.md)。
 
 ### 初始化数据库
 
@@ -96,7 +106,30 @@ src/
 }
 ```
 
-## 数据库命令
+## 数据库
+
+### 开发环境（SQLite）
+
+默认使用 SQLite，无需额外配置。
+
+### 生产环境（MySQL）
+
+1. 修改 `.env` 文件：
+
+```env
+DATABASE_TYPE=mysql
+MYSQL_URL=mysql://user:password@host:3306/database
+```
+
+2. 应用数据库迁移：
+
+```bash
+npm run db:push
+```
+
+详细配置说明请参考：[数据库配置文档](./docs/database-config.md)
+
+### 数据库命令
 
 ```bash
 # 生成迁移文件
@@ -107,6 +140,9 @@ npm run db:push
 
 # 打开数据库管理界面
 npm run db:studio
+
+# 从 SQLite 迁移到 MySQL
+npm run db:migrate
 ```
 
 ## License

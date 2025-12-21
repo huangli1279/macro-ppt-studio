@@ -145,7 +145,25 @@ interface PPTReport {
 
 ## 数据库操作
 
-使用 Drizzle ORM 进行数据库操作：
+### 环境配置
+
+通过 `.env` 文件配置数据库类型和连接信息：
+
+**开发环境配置**:
+```env
+DATABASE_TYPE=sqlite
+SQLITE_DB_PATH=./data/ppt.db
+```
+
+**生产环境配置**:
+```env
+DATABASE_TYPE=mysql
+MYSQL_URL=mysql://user:password@host:3306/database
+```
+
+修改 `.env` 文件中的 `DATABASE_TYPE` 即可切换数据库类型。
+
+### 使用 Drizzle ORM
 
 ```typescript
 // 查询示例
@@ -158,6 +176,25 @@ const reports = await db.select().from(pptReports).orderBy(desc(pptReports.creat
 await db.insert(pptReports).values({ report: jsonString });
 ```
 
+### 数据库命令
+
+```bash
+# 生成迁移文件
+npm run db:generate
+
+# 应用数据库更改
+npm run db:push
+
+# 数据库管理界面
+npm run db:studio
+
+# 测试数据库连接
+npm run db:test
+
+# 从 SQLite 迁移到 MySQL
+npm run db:migrate
+```
+
 ## 开发命令
 
 ```bash
@@ -166,6 +203,9 @@ npm run dev
 
 # 构建生产版本
 npm run build
+
+# 启动生产服务器
+npm start
 
 # 代码检查
 npm run lint
@@ -178,6 +218,12 @@ npm run db:push
 
 # Drizzle Studio（数据库可视化）
 npm run db:studio
+
+# 测试数据库连接
+npm run db:test
+
+# SQLite 迁移到 MySQL
+npm run db:migrate
 ```
 
 ## 注意事项
@@ -187,6 +233,8 @@ npm run db:studio
 3. **响应式**: 幻灯片预览区域保持 16:9 宽高比
 4. **拖拽排序**: 使用 @dnd-kit 实现缩略图拖拽排序
 5. **Monaco Editor**: JSON 编辑器提供语法高亮和错误提示
+6. **数据库配置**: 通过 `.env` 文件配置，修改 `DATABASE_TYPE` 即可切换 SQLite/MySQL
+7. **环境变量**: `.env` 文件包含敏感信息，不应提交到 Git 仓库（已在 .gitignore 中配置）
 
 ## UI/UX 设计原则
 
