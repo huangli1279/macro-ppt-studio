@@ -61,11 +61,11 @@ export function SlideRenderer({
   
   // Adjust sizes based on view mode
   // Priority: isThumbnail > isFullscreen > normal
-  const titleSize = isThumbnail ? "text-sm" : isFullscreen ? "text-3xl" : "text-lg";
+  const titleSize = isThumbnail ? "text-sm" : isFullscreen ? "text-3xl" : "text-xl";
   const contentTextSize = isThumbnail ? "text-xs" : isFullscreen ? "text-lg" : "text-sm";
   const padding = isThumbnail ? "p-2" : "p-6";
   const gap = isThumbnail ? "gap-1" : "gap-4";
-  const titleMargin = isThumbnail ? "mb-2" : isFullscreen ? "mb-6" : "mb-2";
+  const titleMargin = isThumbnail ? "mb-2" : isFullscreen ? "mb-6" : "mb-3";
   const contentChartGap = isThumbnail ? "gap-2" : "gap-12";
   
   // Gap between content and charts
@@ -308,7 +308,7 @@ export function SlideRenderer({
       <div className={`w-full h-full flex flex-col ${padding} relative`}>
         {/* Title */}
         {title && (
-          <h1 className={`${titleSize} font-bold ${titleMargin} shrink-0`} style={{ color: '#1a4f99' }}>
+          <h1 className={`${titleSize} font-bold ${titleMargin} shrink-0 leading-none`} style={{ color: '#1a4f99' }}>
             {title}
           </h1>
         )}
