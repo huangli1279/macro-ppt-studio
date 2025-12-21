@@ -21,13 +21,13 @@ export function TableChart({ data, className = "" }: TableChartProps) {
 
   return (
     <div className={`w-full h-full overflow-auto ${className}`}>
-      <table className="w-full h-full border-collapse text-sm">
+      <table className="w-full h-full border-collapse text-xs">
         <thead>
           <tr>
             {columns.map((col) => (
               <th
                 key={col}
-                className="border border-slate-300 bg-slate-100 px-3 py-1 text-left font-semibold text-slate-700"
+                className="border border-slate-300 bg-slate-100 px-2 py-0.5 text-left font-semibold text-slate-700"
               >
                 {col}
               </th>
@@ -46,7 +46,7 @@ export function TableChart({ data, className = "" }: TableChartProps) {
                 return (
                   <td
                     key={col}
-                    className="border border-slate-200 px-3 py-1 text-slate-600"
+                    className="border border-slate-200 px-2 py-0.5 text-slate-600"
                     style={cellStyle}
                   >
                     {displayValue}
