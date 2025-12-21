@@ -86,6 +86,7 @@ function PrintContent() {
             slide={slide}
             pageNumber={startIndex + index + 1}
             className="w-full h-full"
+            isFullscreen={true}
           />
         </div>
       ))}
