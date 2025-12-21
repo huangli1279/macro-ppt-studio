@@ -27,7 +27,7 @@ export function TableChart({ data, className = "" }: TableChartProps) {
             {columns.map((col) => (
               <th
                 key={col}
-                className="border border-slate-300 bg-slate-100 px-3 py-2 text-left font-semibold text-slate-700"
+                className="border border-slate-300 bg-slate-100 px-3 py-1 text-left font-semibold text-slate-700"
               >
                 {col}
               </th>
@@ -46,7 +46,7 @@ export function TableChart({ data, className = "" }: TableChartProps) {
                 return (
                   <td
                     key={col}
-                    className="border border-slate-200 px-3 py-2 text-slate-600"
+                    className="border border-slate-200 px-3 py-1 text-slate-600"
                     style={cellStyle}
                   >
                     {displayValue}
