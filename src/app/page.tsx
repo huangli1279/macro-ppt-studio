@@ -19,12 +19,10 @@ import { FullscreenPresenter } from "@/components/presentation/FullscreenPresent
 import { PPTReport, SlideData } from "@/types/slide";
 import {
   Save,
-  FileDown,
   Code,
   Eye,
   Maximize,
   Loader2,
-  Check,
 } from "lucide-react";
 
 export default function Home() {
@@ -35,10 +33,8 @@ export default function Home() {
   const [sourceCode, setSourceCode] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [isExporting, setIsExporting] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showSaveSuccess, setShowSaveSuccess] = useState(false);
-  const [showExportSuccess, setShowExportSuccess] = useState(false);
 
   // Modal state
   const [modalOpen, setModalOpen] = useState(false);
@@ -132,40 +128,6 @@ export default function Home() {
       alert("保存失败，请重试或检查网络连接");
     } finally {
       setIsSaving(false);
-    }
-  };
-
-  // Export PDF
-  const handleExportPDF = async () => {
-    setIsExporting(true);
-    try {
-      const response = await fetch("/api/export-pdf", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ slides }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to export PDF");
-      }
-
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `report-${Date.now()}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      
-      setShowExportSuccess(true);
-      setTimeout(() => setShowExportSuccess(false), 1000);
-    } catch (error) {
-      console.error("Failed to export PDF:", error);
-      alert("导出失败，请重试或检查网络连接");
-    } finally {
-      setIsExporting(false);
     }
   };
 
@@ -289,26 +251,6 @@ export default function Home() {
                 <TooltipContent>保存</TooltipContent>
               </Tooltip>
             </div>
-
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={handleExportPDF}
-                  disabled={isExporting || slides.length === 0}
-                >
-                  {isExporting ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : showExportSuccess ? (
-                    <Check className="h-4 w-4 text-slate-800" />
-                  ) : (
-                    <FileDown className="h-4 w-4" />
-                  )}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>导出PDF</TooltipContent>
-            </Tooltip>
 
             <Tooltip>
               <TooltipTrigger asChild>
