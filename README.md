@@ -16,7 +16,7 @@
 
 - **框架**: Next.js 16 (App Router)
 - **样式**: Tailwind CSS v4 + shadcn/ui
-- **数据库**: Drizzle ORM + SQLite (开发) / MySQL (生产)
+- **数据库**: Drizzle ORM + MySQL
 - **代码编辑器**: Monaco Editor
 - **图表**: ECharts
 - **PDF导出**: Puppeteer
@@ -32,13 +32,19 @@ npm install
 
 ### 配置环境变量
 
-复制环境变量模板文件：
+复制环境变量模板文件并配置 MySQL 数据库：
 
 ```bash
 cp .env.example .env
 ```
 
-开发环境默认使用 SQLite，无需修改配置。生产环境配置请参考 [数据库配置文档](./docs/database-config.md)。
+编辑 `.env` 文件，配置 MySQL 连接信息：
+
+```env
+MYSQL_URL=mysql://user:password@localhost:3306/hongguanai
+```
+
+详细配置请参考 [数据库配置文档](./docs/database-config.md)。
 
 ### 初始化数据库
 
@@ -106,25 +112,75 @@ src/
 }
 ```
 
-## 数据库
+## Docker 部署 🐳
 
-### 开发环境（SQLite）
+### 快速开始
 
-默认使用 SQLite，无需额外配置。
+使用 Docker Compose 一键启动：
 
-### 生产环境（MySQL）
+```bash
+# 1. 复制环境变量模板
+cp .env.docker.example .env.docker
 
-1. 修改 `.env` 文件：
+# 2. 修改 .env.docker 中的数据库密码
 
-```env
-DATABASE_TYPE=mysql
-MYSQL_URL=mysql://user:password@host:3306/database
+# 3. 启动服务（包含 MySQL 数据库）
+make dev-up
+
+# 4. 访问应用
+open http://localhost:3000
 ```
 
-2. 应用数据库迁移：
+### 常用命令
+
+```bash
+# 启动服务
+make dev-up
+
+# 停止服务
+make dev-down
+
+# 查看日志
+make logs-app
+
+# 重新构建
+make rebuild
+
+# 健康检查
+make health
+```
+
+### 详细文档
+
+- 📖 [完整 Docker 部署指南](./docs/docker-deployment.md)
+- 🧪 [测试 Docker 配置](./scripts/test-docker.sh)
+
+## 数据库
+
+本项目使用 MySQL 数据库。
+
+### 本地开发
+
+1. 确保 MySQL 服务已启动
+2. 创建数据库：`CREATE DATABASE hongguanai;`
+3. 修改 `.env` 文件：
+
+```env
+MYSQL_URL=mysql://user:password@localhost:3306/hongguanai
+```
+
+4. 应用数据库迁移：
 
 ```bash
 npm run db:push
+```
+
+### Docker 部署
+
+使用 `docker-compose.yml` 自动配置 MySQL：
+
+```bash
+make dev-up  # 自动启动 MySQL 并连接
 ```
 
 详细配置说明请参考：[数据库配置文档](./docs/database-config.md)
@@ -141,8 +197,8 @@ npm run db:push
 # 打开数据库管理界面
 npm run db:studio
 
-# 从 SQLite 迁移到 MySQL
-npm run db:migrate
+# 测试数据库连接
+npm run db:test
 ```
 
 ## License

@@ -1,0 +1,262 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: hongguanai4
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hongguanai4-config
+  namespace: hongguanai4
+data:
+  NODE_ENV: "production"
+  PORT: "3000"
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: hongguanai4-secret
+  namespace: hongguanai4
+type: Opaque
+stringData:
+  # 注意：实际部署时应使用 kubectl create secret 或 sealed-secrets
+  MYSQL_URL: "mysql://hongguanai4:CHANGE_ME@mysql:3306/hongguanai4"
+  MYSQL_ROOT_PASSWORD: "CHANGE_ME"
+  MYSQL_PASSWORD: "CHANGE_ME"
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-pvc
+  namespace: hongguanai4
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  # storageClassName: 根据云平台选择，如 ssd、alicloud-disk-ssd 等
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql
+  namespace: hongguanai4
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mysql
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:8.0
+          ports:
+            - containerPort: 3306
+              name: mysql
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: hongguanai4-secret
+                  key: MYSQL_ROOT_PASSWORD
+            - name: MYSQL_DATABASE
+              value: "hongguanai4"
+            - name: MYSQL_USER
+              value: "hongguanai4"
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: hongguanai4-secret
+                  key: MYSQL_PASSWORD
+          volumeMounts:
+            - name: mysql-storage
+              mountPath: /var/lib/mysql
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "500m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+          livenessProbe:
+            exec:
+              command:
+                - mysqladmin
+                - ping
+                - -h
+                - localhost
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            exec:
+              command:
+                - mysqladmin
+                - ping
+                - -h
+                - localhost
+            initialDelaySeconds: 5
+            periodSeconds: 5
+      volumes:
+        - name: mysql-storage
+          persistentVolumeClaim:
+            claimName: mysql-pvc
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+  namespace: hongguanai4
+spec:
+  selector:
+    app: mysql
+  ports:
+    - port: 3306
+      targetPort: 3306
+  type: ClusterIP
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hongguanai4-app
+  namespace: hongguanai4
+spec:
+  replicas: 2  # 可根据需求调整副本数
+  selector:
+    matchLabels:
+      app: hongguanai4-app
+  template:
+    metadata:
+      labels:
+        app: hongguanai4-app
+    spec:
+      containers:
+        - name: app
+          image: hongguanai4:latest  # 替换为实际镜像地址
+          ports:
+            - containerPort: 3000
+              name: http
+          env:
+            - name: NODE_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: hongguanai4-config
+                  key: NODE_ENV
+            - name: PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: hongguanai4-config
+                  key: PORT
+            - name: MYSQL_URL
+              valueFrom:
+                secretKeyRef:
+                  name: hongguanai4-secret
+                  key: MYSQL_URL
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "500m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+      # 如果镜像在私有仓库，需要配置 imagePullSecrets
+      # imagePullSecrets:
+      #   - name: registry-secret
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hongguanai4-app
+  namespace: hongguanai4
+spec:
+  selector:
+    app: hongguanai4-app
+  ports:
+    - port: 80
+      targetPort: 3000
+      protocol: TCP
+      name: http
+  type: ClusterIP
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: hongguanai4-ingress
+  namespace: hongguanai4
+  annotations:
+    # 根据云平台选择合适的 Ingress Controller
+    # kubernetes.io/ingress.class: nginx
+    # cert-manager.io/cluster-issuer: letsencrypt-prod  # HTTPS 证书
+spec:
+  rules:
+    - host: hongguanai4.example.com  # 替换为实际域名
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: hongguanai4-app
+                port:
+                  number: 80
+  # tls:
+  #   - hosts:
+  #       - hongguanai4.example.com
+  #     secretName: hongguanai4-tls
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: hongguanai4-hpa
+  namespace: hongguanai4
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: hongguanai4-app
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80
+

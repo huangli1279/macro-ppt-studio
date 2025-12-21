@@ -13,34 +13,19 @@
 cp .env.example .env
 ```
 
-### 2. 根据环境修改配置
-
-#### 开发环境（默认 SQLite）
+### 2. 配置 MySQL 数据库
 
 `.env` 文件内容：
 ```env
-DATABASE_TYPE=sqlite
-SQLITE_DB_PATH=./data/ppt.db
-```
-
-#### 生产环境（MySQL）
-
-`.env` 文件内容：
-```env
-DATABASE_TYPE=mysql
+# 使用连接字符串（推荐）
 MYSQL_URL=mysql://user:password@host:3306/database
-```
 
-## 🔄 切换数据库
-
-只需修改 `.env` 文件中的 `DATABASE_TYPE` 即可：
-
-```env
-# 使用 SQLite
-DATABASE_TYPE=sqlite
-
-# 使用 MySQL
-DATABASE_TYPE=mysql
+# 或使用单独的连接参数
+MYSQL_HOST=localhost
+MYSQL_PORT=3306
+MYSQL_USER=root
+MYSQL_PASSWORD=your_password
+MYSQL_DATABASE=hongguanai
 ```
 
 ## ✅ 测试配置

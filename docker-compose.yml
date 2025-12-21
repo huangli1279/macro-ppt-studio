@@ -1,0 +1,62 @@
+# 宏观经济报告 PPT Studio - Docker Compose 配置
+# 用于本地开发和测试
+
+version: '3.8'
+
+services:
+  # MySQL 数据库
+  mysql:
+    image: mysql:8.0
+    container_name: hongguanai4-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password_change_me
+      MYSQL_DATABASE: hongguanai4
+      MYSQL_USER: hongguanai4
+      MYSQL_PASSWORD: password_change_me
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./mysql/conf.d:/etc/mysql/conf.d
+    networks:
+      - hongguanai4-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Next.js 应用
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: hongguanai4-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      # 数据库配置
+      MYSQL_URL: mysql://hongguanai4:password_change_me@mysql:3306/hongguanai4
+      
+      # Node 环境
+      NODE_ENV: production
+      
+      # Puppeteer 配置
+      PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: false
+      PUPPETEER_EXECUTABLE_PATH: /usr/bin/google-chrome
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - hongguanai4-network
+
+volumes:
+  mysql_data:
+    driver: local
+
+networks:
+  hongguanai4-network:
+    driver: bridge
+

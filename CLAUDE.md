@@ -11,7 +11,7 @@
 - **样式**: Tailwind CSS v4
 - **UI 组件库**: shadcn/ui (基于 Radix UI)
 - **数据库 ORM**: Drizzle ORM
-- **数据库**: SQLite (开发环境) / MySQL (生产环境)
+- **数据库**: MySQL
 - **图表库**: ECharts + echarts-for-react
 - **代码编辑器**: Monaco Editor (@monaco-editor/react)
 - **拖拽排序**: @dnd-kit
@@ -147,21 +147,19 @@ interface PPTReport {
 
 ### 环境配置
 
-通过 `.env` 文件配置数据库类型和连接信息：
+通过 `.env` 文件配置 MySQL 数据库连接信息：
 
-**开发环境配置**:
 ```env
-DATABASE_TYPE=sqlite
-SQLITE_DB_PATH=./data/ppt.db
-```
-
-**生产环境配置**:
-```env
-DATABASE_TYPE=mysql
+# 使用连接字符串（推荐）
 MYSQL_URL=mysql://user:password@host:3306/database
-```
 
-修改 `.env` 文件中的 `DATABASE_TYPE` 即可切换数据库类型。
+# 或者使用单独的连接参数
+MYSQL_HOST=localhost
+MYSQL_PORT=3306
+MYSQL_USER=root
+MYSQL_PASSWORD=your_password
+MYSQL_DATABASE=hongguanai
+```
 
 ### 使用 Drizzle ORM
 
@@ -190,9 +188,6 @@ npm run db:studio
 
 # 测试数据库连接
 npm run db:test
-
-# 从 SQLite 迁移到 MySQL
-npm run db:migrate
 ```
 
 ## 开发命令
@@ -221,9 +216,6 @@ npm run db:studio
 
 # 测试数据库连接
 npm run db:test
-
-# SQLite 迁移到 MySQL
-npm run db:migrate
 ```
 
 ## 注意事项
@@ -233,7 +225,7 @@ npm run db:migrate
 3. **响应式**: 幻灯片预览区域保持 16:9 宽高比
 4. **拖拽排序**: 使用 @dnd-kit 实现缩略图拖拽排序
 5. **Monaco Editor**: JSON 编辑器提供语法高亮和错误提示
-6. **数据库配置**: 通过 `.env` 文件配置，修改 `DATABASE_TYPE` 即可切换 SQLite/MySQL
+6. **数据库配置**: 通过 `.env` 文件配置 MySQL 连接信息
 7. **环境变量**: `.env` 文件包含敏感信息，不应提交到 Git 仓库（已在 .gitignore 中配置）
 
 ## UI/UX 设计原则

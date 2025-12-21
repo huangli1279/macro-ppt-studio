@@ -5,28 +5,20 @@ dotenv.config();
 
 async function testConnection() {
   try {
-    console.log("🔍 Database Configuration Test\n");
+    console.log("🔍 MySQL Database Configuration Test\n");
     
-    // Check environment variables
-    const dbType = process.env.DATABASE_TYPE || "sqlite";
-    console.log(`📊 Database Type: ${dbType}`);
-    
-    if (dbType === "mysql") {
-      console.log("\n🔧 MySQL Configuration:");
-      if (process.env.MYSQL_URL) {
-        // Mask password in URL
-        const maskedUrl = process.env.MYSQL_URL.replace(/:([^@]+)@/, ":****@");
-        console.log(`   URL: ${maskedUrl}`);
-      } else {
-        console.log(`   Host: ${process.env.MYSQL_HOST || "localhost"}`);
-        console.log(`   Port: ${process.env.MYSQL_PORT || "3306"}`);
-        console.log(`   User: ${process.env.MYSQL_USER || "root"}`);
-        console.log(`   Password: ${process.env.MYSQL_PASSWORD ? "****" : "(not set)"}`);
-        console.log(`   Database: ${process.env.MYSQL_DATABASE || "hongguanai"}`);
-      }
+    // Check MySQL environment variables
+    console.log("🔧 MySQL Configuration:");
+    if (process.env.MYSQL_URL) {
+      // Mask password in URL
+      const maskedUrl = process.env.MYSQL_URL.replace(/:([^@]+)@/, ":****@");
+      console.log(`   URL: ${maskedUrl}`);
     } else {
-      console.log("\n🔧 SQLite Configuration:");
-      console.log(`   Path: ${process.env.SQLITE_DB_PATH || "./data/ppt.db"}`);
+      console.log(`   Host: ${process.env.MYSQL_HOST || "localhost"}`);
+      console.log(`   Port: ${process.env.MYSQL_PORT || "3306"}`);
+      console.log(`   User: ${process.env.MYSQL_USER || "root"}`);
+      console.log(`   Password: ${process.env.MYSQL_PASSWORD ? "****" : "(not set)"}`);
+      console.log(`   Database: ${process.env.MYSQL_DATABASE || "hongguanai"}`);
     }
     
     // Import database after environment variables are loaded

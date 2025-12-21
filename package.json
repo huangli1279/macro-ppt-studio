@@ -10,7 +10,6 @@
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "db:migrate": "tsx scripts/migrate-sqlite-to-mysql.ts",
     "db:test": "tsx scripts/test-db-connection.ts"
   },
   "dependencies": {
@@ -40,12 +39,8 @@
     "react-dom": "19.2.3",
     "tailwind-merge": "^3.4.0"
   },
-  "optionalDependencies": {
-    "better-sqlite3": "^12.5.0"
-  },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
-    "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
