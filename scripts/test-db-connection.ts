@@ -28,7 +28,7 @@ async function testConnection() {
     
     // Test query
     console.log("📊 Querying database...");
-    const reports = await db.select().from(pptReports).all();
+    const reports = await db.select().from(pptReports);
     
     console.log(`✅ Connection successful!`);
     console.log(`📄 Found ${reports.length} report(s) in database`);
@@ -38,7 +38,7 @@ async function testConnection() {
       console.log(`\n📌 Latest report:`);
       console.log(`   ID: ${latestReport.id}`);
       console.log(`   Created: ${latestReport.createTime}`);
-      console.log(`   Size: ${latestReport.report.length} bytes`);
+      console.log(`   Size: ${latestReport.report?.length ?? 0} bytes`);
     }
     
     console.log("\n✨ Test completed successfully!");

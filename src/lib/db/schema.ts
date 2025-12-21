@@ -1,10 +1,10 @@
-import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
+import { mysqlTable, text, int, timestamp } from "drizzle-orm/mysql-core";
 import { sql } from "drizzle-orm";
 
-export const pptReports = sqliteTable("ppt_reports", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const pptReports = mysqlTable("ppt_reports", {
+  id: int("id").primaryKey().autoincrement(),
   report: text("report"), // PPT report JSON configuration
-  createTime: text("create_time")
+  createTime: timestamp("create_time")
     .notNull()
     .default(sql`CURRENT_TIMESTAMP`),
 });

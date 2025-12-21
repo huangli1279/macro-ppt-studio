@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { sql } from 'drizzle-orm';
 
 /**
  * 健康检查端点
@@ -8,7 +9,7 @@ import { db } from '@/lib/db';
 export async function GET() {
   try {
     // 检查数据库连接
-    await db.execute({ sql: 'SELECT 1', args: [] });
+    await db.execute(sql`SELECT 1`);
 
     return NextResponse.json({
       status: 'healthy',

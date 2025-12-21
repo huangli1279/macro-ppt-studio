@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      id: result.lastInsertRowid,
+      id: result[0].insertId,
     });
   } catch (error) {
     console.error("Failed to save report:", error);
