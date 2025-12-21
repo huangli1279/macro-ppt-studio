@@ -65,8 +65,12 @@ export function SlideRenderer({
   const contentTextSize = isThumbnail ? "text-xs" : isFullscreen ? "text-lg" : "text-sm";
   const padding = isThumbnail ? "p-2" : "p-6";
   const gap = isThumbnail ? "gap-1" : "gap-4";
-  const titleMargin = isThumbnail ? "mb-2" : "mb-4";
+  const titleMargin = isThumbnail ? "mb-2" : isFullscreen ? "mb-6" : "mb-2";
   const contentChartGap = isThumbnail ? "gap-2" : "gap-12";
+  
+  // Gap between content and charts
+  // Use larger gap in fullscreen mode
+  const contentToChartGap = isThumbnail ? '0.5rem' : isFullscreen ? '2rem' : '1.5rem';
 
   // Determine layout based on content and chart counts
   const renderLayout = () => {
@@ -82,7 +86,7 @@ export function SlideRenderer({
     // Layout: 2 content + 1 chart (or less)
     if (contentCount <= 2 && chartCount <= 1) {
       return (
-        <div className="flex-1 flex flex-col" style={{ gap: isThumbnail ? '0.5rem' : '2rem' }}>
+        <div className="flex-1 flex flex-col" style={{ gap: contentToChartGap }}>
           {/* Content row */}
           {contentCount > 0 && (
             <div className="flex gap-8">
@@ -115,7 +119,7 @@ export function SlideRenderer({
     // Layout: 2 content + 2 charts
     if (contentCount <= 2 && chartCount === 2) {
       return (
-        <div className="flex-1 flex flex-col" style={{ gap: isThumbnail ? '0.5rem' : '2rem' }}>
+        <div className="flex-1 flex flex-col" style={{ gap: contentToChartGap }}>
           {/* Content row */}
           {contentCount > 0 && (
             <div className="flex gap-8">
@@ -143,7 +147,7 @@ export function SlideRenderer({
     // Layout: 3 content + 3 charts
     if (contentCount === 3 && chartCount === 3) {
       return (
-        <div className="flex-1 flex flex-col" style={{ gap: isThumbnail ? '0.5rem' : '2rem' }}>
+        <div className="flex-1 flex flex-col" style={{ gap: contentToChartGap }}>
           {/* Content row: 论点1+论点2 在左，论点3 在右 */}
           <div className="flex gap-4">
             <div className="flex-1 flex flex-col gap-0">
@@ -177,7 +181,7 @@ export function SlideRenderer({
     // Layout: 4 content + 4 charts
     if (contentCount === 4 && chartCount === 4) {
       return (
-        <div className="flex-1 flex flex-col" style={{ gap: isThumbnail ? '0.5rem' : '2rem' }}>
+        <div className="flex-1 flex flex-col" style={{ gap: contentToChartGap }}>
           {/* Content row */}
           <div className="flex gap-8">
             <div className="flex-1 flex flex-col gap-0">
@@ -214,7 +218,7 @@ export function SlideRenderer({
 
     // Default fallback layout: flexible grid
     return (
-      <div className="flex-1 flex flex-col" style={{ gap: isThumbnail ? '0.5rem' : '2rem' }}>
+      <div className="flex-1 flex flex-col" style={{ gap: contentToChartGap }}>
         {/* Content section */}
         {contentCount > 0 && (
           <div
