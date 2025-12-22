@@ -16,7 +16,7 @@
 
 - **框架**: Next.js 16 (App Router)
 - **样式**: Tailwind CSS v4 + shadcn/ui
-- **数据库**: Drizzle ORM + SQLite (开发) / MySQL (生产)
+- **数据库**: Drizzle ORM + Supabase (PostgreSQL)
 - **代码编辑器**: Monaco Editor
 - **图表**: ECharts
 - **PDF导出**: Puppeteer
@@ -38,7 +38,18 @@ npm install
 cp .env.example .env
 ```
 
-开发环境默认使用 SQLite，无需修改配置。生产环境配置请参考 [数据库配置文档](./docs/database-config.md)。
+编辑 `.env` 文件，添加你的 Supabase 数据库连接字符串：
+
+```env
+DATABASE_URL=postgres://postgres.xxxxxxxxxxxx:your_password@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres
+```
+
+获取 Supabase 数据库 URL：
+1. 登录 [Supabase Dashboard](https://supabase.com/dashboard)
+2. 选择你的项目
+3. 进入 Settings -> Database
+4. 找到 "Connection string" -> "Connection pooling"
+5. 复制连接字符串并替换 `.env` 中的 `DATABASE_URL`
 
 ### 初始化数据库
 
@@ -108,26 +119,18 @@ src/
 
 ## 数据库
 
-### 开发环境（SQLite）
+本项目使用 **Supabase** 作为数据库（基于 PostgreSQL）。
 
-默认使用 SQLite，无需额外配置。
+### 设置步骤
 
-### 生产环境（MySQL）
-
-1. 修改 `.env` 文件：
-
-```env
-DATABASE_TYPE=mysql
-MYSQL_URL=mysql://user:password@host:3306/database
-```
-
-2. 应用数据库迁移：
+1. 在 [Supabase](https://supabase.com) 创建一个新项目
+2. 获取数据库连接字符串（Settings -> Database -> Connection pooling）
+3. 将连接字符串添加到 `.env` 文件的 `DATABASE_URL` 变量
+4. 运行数据库迁移：
 
 ```bash
 npm run db:push
 ```
-
-详细配置说明请参考：[数据库配置文档](./docs/database-config.md)
 
 ### 数据库命令
 
@@ -140,10 +143,15 @@ npm run db:push
 
 # 打开数据库管理界面
 npm run db:studio
-
-# 从 SQLite 迁移到 MySQL
-npm run db:migrate
 ```
+
+### 为什么选择 Supabase？
+
+- ✅ 云端托管，无需本地数据库
+- ✅ 自动备份和扩展
+- ✅ 免费层级足够开发使用
+- ✅ 提供实时数据库功能
+- ✅ 无需编译 native 模块，部署更简单
 
 ## License
 

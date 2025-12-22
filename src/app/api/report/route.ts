@@ -51,11 +51,11 @@ export async function POST(request: NextRequest) {
 
     const result = await db.insert(pptReports).values({
       report: JSON.stringify(report),
-    });
+    }).returning();
 
     return NextResponse.json({
       success: true,
-      id: result.lastInsertRowid,
+      id: result[0]?.id,
     });
   } catch (error) {
     console.error("Failed to save report:", error);

@@ -1,12 +1,11 @@
-import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
-import { sql } from "drizzle-orm";
+import { pgTable, serial, text, timestamp } from "drizzle-orm/pg-core";
 
-export const pptReports = sqliteTable("ppt_reports", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const pptReports = pgTable("ppt_reports", {
+  id: serial("id").primaryKey(),
   report: text("report"), // PPT report JSON configuration
-  createTime: text("create_time")
+  createTime: timestamp("create_time", { mode: "string" })
     .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
+    .defaultNow(),
 });
 
 export type PPTReportRecord = typeof pptReports.$inferSelect;
