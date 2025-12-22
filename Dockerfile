@@ -1,51 +1,56 @@
 # 宏观经济报告 PPT Studio - Docker 配置
 # 支持 Next.js 16 + Puppeteer + MySQL
+# 基于 Rocky Linux 9 (CentOS 继任者)
 
 # ============================================
 # Stage 1: 依赖安装
 # ============================================
-FROM node:22-slim AS deps
+FROM rockylinux:9 AS deps
+
+# 安装 Node.js 22 和基础工具
+RUN yum install -y epel-release && \
+    yum module reset nodejs -y && \
+    curl -fsSL https://rpm.nodesource.com/setup_22.x | bash - && \
+    yum install -y nodejs && \
+    yum clean all && \
+    rm -rf /var/cache/yum
 
 # 安装 Puppeteer 所需的系统依赖
-RUN apt-get update && apt-get install -y \
-    ca-certificates \
-    fonts-liberation \
-    libappindicator3-1 \
-    libasound2 \
-    libatk-bridge2.0-0 \
-    libatk1.0-0 \
-    libc6 \
-    libcairo2 \
-    libcups2 \
-    libdbus-1-3 \
-    libexpat1 \
-    libfontconfig1 \
-    libgbm1 \
-    libgcc1 \
-    libglib2.0-0 \
-    libgtk-3-0 \
-    libnspr4 \
-    libnss3 \
-    libpango-1.0-0 \
-    libpangocairo-1.0-0 \
-    libstdc++6 \
-    libx11-6 \
-    libx11-xcb1 \
-    libxcb1 \
-    libxcomposite1 \
-    libxcursor1 \
-    libxdamage1 \
-    libxext6 \
-    libxfixes3 \
-    libxi6 \
-    libxrandr2 \
-    libxrender1 \
-    libxss1 \
-    libxtst6 \
-    lsb-release \
-    wget \
+RUN yum install -y \
+    alsa-lib \
+    atk \
+    at-spi2-atk \
+    at-spi2-core \
+    cairo \
+    cups-libs \
+    dbus-libs \
+    expat \
+    fontconfig \
+    glib2 \
+    gtk3 \
+    libX11 \
+    libX11-xcb \
+    libXcomposite \
+    libXcursor \
+    libXdamage \
+    libXext \
+    libXfixes \
+    libXi \
+    libXrandr \
+    libXrender \
+    libXScrnSaver \
+    libXtst \
+    libdrm \
+    libgbm \
+    mesa-libgbm \
+    nspr \
+    nss \
+    pango \
     xdg-utils \
-    && rm -rf /var/lib/apt/lists/*
+    wget \
+    ca-certificates \
+    && yum clean all && \
+    rm -rf /var/cache/yum
 
 WORKDIR /app
 
@@ -58,7 +63,15 @@ RUN npm ci --omit=dev
 # ============================================
 # Stage 2: 构建阶段
 # ============================================
-FROM node:22-slim AS builder
+FROM rockylinux:9 AS builder
+
+# 安装 Node.js 22
+RUN yum install -y epel-release && \
+    yum module reset nodejs -y && \
+    curl -fsSL https://rpm.nodesource.com/setup_22.x | bash - && \
+    yum install -y nodejs && \
+    yum clean all && \
+    rm -rf /var/cache/yum
 
 WORKDIR /app
 
@@ -78,49 +91,54 @@ RUN npm run build
 # ============================================
 # Stage 3: 生产运行阶段
 # ============================================
-FROM node:22-slim AS runner
+FROM rockylinux:9 AS runner
 
-# 安装 Puppeteer 运行时依赖
-RUN apt-get update && apt-get install -y \
-    ca-certificates \
-    fonts-liberation \
-    fonts-noto-cjk \
-    libappindicator3-1 \
-    libasound2 \
-    libatk-bridge2.0-0 \
-    libatk1.0-0 \
-    libc6 \
-    libcairo2 \
-    libcups2 \
-    libdbus-1-3 \
-    libexpat1 \
-    libfontconfig1 \
-    libgbm1 \
-    libgcc1 \
-    libglib2.0-0 \
-    libgtk-3-0 \
-    libnspr4 \
-    libnss3 \
-    libpango-1.0-0 \
-    libpangocairo-1.0-0 \
-    libstdc++6 \
-    libx11-6 \
-    libx11-xcb1 \
-    libxcb1 \
-    libxcomposite1 \
-    libxcursor1 \
-    libxdamage1 \
-    libxext6 \
-    libxfixes3 \
-    libxi6 \
-    libxrandr2 \
-    libxrender1 \
-    libxss1 \
-    libxtst6 \
-    lsb-release \
-    wget \
+# 安装 Node.js 22
+RUN yum install -y epel-release && \
+    yum module reset nodejs -y && \
+    curl -fsSL https://rpm.nodesource.com/setup_22.x | bash - && \
+    yum install -y nodejs && \
+    yum clean all && \
+    rm -rf /var/cache/yum
+
+# 安装 Puppeteer 运行时依赖和中文字体
+RUN yum install -y \
+    alsa-lib \
+    atk \
+    at-spi2-atk \
+    at-spi2-core \
+    cairo \
+    cups-libs \
+    dbus-libs \
+    expat \
+    fontconfig \
+    glib2 \
+    gtk3 \
+    libX11 \
+    libX11-xcb \
+    libXcomposite \
+    libXcursor \
+    libXdamage \
+    libXext \
+    libXfixes \
+    libXi \
+    libXrandr \
+    libXrender \
+    libXScrnSaver \
+    libXtst \
+    libdrm \
+    libgbm \
+    mesa-libgbm \
+    nspr \
+    nss \
+    pango \
     xdg-utils \
-    && rm -rf /var/lib/apt/lists/*
+    wget \
+    ca-certificates \
+    google-noto-cjk-fonts \
+    liberation-fonts \
+    && yum clean all && \
+    rm -rf /var/cache/yum
 
 WORKDIR /app
 
@@ -131,8 +149,8 @@ ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
 # 创建非 root 用户
-RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 nextjs
+RUN groupadd --system --gid 1001 nodejs && \
+    useradd --system --uid 1001 --gid nodejs nextjs
 
 # 复制必要文件
 COPY --from=builder /app/public ./public
