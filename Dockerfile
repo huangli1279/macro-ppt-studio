@@ -1,19 +1,12 @@
 # 宏观经济报告 PPT Studio - Docker 配置
 # 支持 Next.js 16 + Puppeteer + MySQL
-# 基于 Rocky Linux 9 (CentOS 继任者)
+# 基于公司内部 Node.js 基础镜像
 
 # ============================================
 # Stage 1: 依赖安装
 # ============================================
-FROM rockylinux:9 AS deps
-
-# 安装 Node.js 22 和基础工具
-RUN yum install -y epel-release && \
-    yum module reset nodejs -y && \
-    curl -fsSL https://rpm.nodesource.com/setup_22.x | bash - && \
-    yum install -y nodejs && \
-    yum clean all && \
-    rm -rf /var/cache/yum
+# 使用公司内部 Node.js 基础镜像（请替换为实际的镜像地址）
+FROM your-company-registry/nodejs:22 AS deps
 
 # 安装 Puppeteer 所需的系统依赖
 RUN yum install -y \
@@ -63,15 +56,8 @@ RUN npm ci --omit=dev
 # ============================================
 # Stage 2: 构建阶段
 # ============================================
-FROM rockylinux:9 AS builder
-
-# 安装 Node.js 22
-RUN yum install -y epel-release && \
-    yum module reset nodejs -y && \
-    curl -fsSL https://rpm.nodesource.com/setup_22.x | bash - && \
-    yum install -y nodejs && \
-    yum clean all && \
-    rm -rf /var/cache/yum
+# 使用公司内部 Node.js 基础镜像（请替换为实际的镜像地址）
+FROM your-company-registry/nodejs:22 AS builder
 
 WORKDIR /app
 
@@ -91,15 +77,8 @@ RUN npm run build
 # ============================================
 # Stage 3: 生产运行阶段
 # ============================================
-FROM rockylinux:9 AS runner
-
-# 安装 Node.js 22
-RUN yum install -y epel-release && \
-    yum module reset nodejs -y && \
-    curl -fsSL https://rpm.nodesource.com/setup_22.x | bash - && \
-    yum install -y nodejs && \
-    yum clean all && \
-    rm -rf /var/cache/yum
+# 使用公司内部 Node.js 基础镜像（请替换为实际的镜像地址）
+FROM your-company-registry/nodejs:22 AS runner
 
 # 安装 Puppeteer 运行时依赖和中文字体
 RUN yum install -y \
@@ -145,7 +124,7 @@ WORKDIR /app
 # 设置环境变量
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
-ENV PORT=3000
+ENV PORT=8080
 ENV HOSTNAME="0.0.0.0"
 
 # 创建非 root 用户
@@ -168,11 +147,7 @@ RUN mkdir -p ./data && chown -R nextjs:nodejs ./data
 USER nextjs
 
 # 暴露端口
-EXPOSE 3000
-
-# 健康检查
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1
+EXPOSE 8080
 
 # 启动应用
 CMD ["node", "server.js"]
