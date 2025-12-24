@@ -1,0 +1,145 @@
+# GitLab CI/CD 配置示例
+# 使用前请重命名为 .gitlab-ci.yml
+
+variables:
+  # 镜像仓库地址（请替换为公司实际地址）
+  REGISTRY: your-company-registry.com
+  IMAGE_NAME: hongguanai4
+  
+stages:
+  - build
+  - deploy
+
+# ============================================
+# 构建阶段：从 Git 仓库构建 Docker 镜像
+# ============================================
+build:
+  stage: build
+  tags:
+    - docker
+  script:
+    - echo "开始构建 Docker 镜像..."
+    
+    # 1. 构建镜像（注意：不需要传入 MYSQL_URL 等运行时环境变量）
+    - |
+      docker build \
+        -t ${REGISTRY}/${IMAGE_NAME}:${CI_COMMIT_SHA} \
+        -t ${REGISTRY}/${IMAGE_NAME}:latest \
+        .
+    
+    # 2. 推送到镜像仓库
+    - docker push ${REGISTRY}/${IMAGE_NAME}:${CI_COMMIT_SHA}
+    - docker push ${REGISTRY}/${IMAGE_NAME}:latest
+    
+    - echo "镜像构建完成: ${REGISTRY}/${IMAGE_NAME}:${CI_COMMIT_SHA}"
+  
+  only:
+    - main
+    - develop
+
+# ============================================
+# 部署阶段：部署到 Kubernetes
+# ============================================
+deploy:k8s:
+  stage: deploy
+  tags:
+    - kubernetes
+  script:
+    - echo "开始部署到 Kubernetes..."
+    
+    # 1. 更新 Secret（从 CI/CD Variables 读取）
+    - |
+      kubectl create secret generic hongguanai4-secret \
+        --from-literal=MYSQL_URL="${MYSQL_URL}" \
+        --namespace=hongguanai4 \
+        --dry-run=client -o yaml | kubectl apply -f -
+    
+    # 2. 更新镜像版本
+    - |
+      kubectl set image deployment/hongguanai4-app \
+        app=${REGISTRY}/${IMAGE_NAME}:${CI_COMMIT_SHA} \
+        --namespace=hongguanai4
+    
+    # 3. 等待部署完成
+    - kubectl rollout status deployment/hongguanai4-app --namespace=hongguanai4
+    
+    # 4. 验证部署
+    - kubectl get pods -n hongguanai4
+    
+    - echo "部署完成！"
+  
+  only:
+    - main
+  when: manual  # 需要手动触发
+
+# ============================================
+# 部署阶段：部署到 Docker 主机（可选）
+# ============================================
+deploy:docker:
+  stage: deploy
+  tags:
+    - shell
+  script:
+    - echo "开始部署到 Docker 主机..."
+    
+    # 1. 拉取最新镜像
+    - docker pull ${REGISTRY}/${IMAGE_NAME}:${CI_COMMIT_SHA}
+    
+    # 2. 停止旧容器
+    - docker stop hongguanai4 || true
+    - docker rm hongguanai4 || true
+    
+    # 3. 启动新容器（从 CI/CD Variables 注入环境变量）
+    - |
+      docker run -d \
+        --name hongguanai4 \
+        --restart unless-stopped \
+        -p 3000:8080 \
+        -e MYSQL_URL="${MYSQL_URL}" \
+        -e NODE_ENV="production" \
+        -e NEXT_TELEMETRY_DISABLED=1 \
+        ${REGISTRY}/${IMAGE_NAME}:${CI_COMMIT_SHA}
+    
+    # 4. 验证容器运行状态
+    - sleep 5
+    - docker ps | grep hongguanai4
+    - docker logs hongguanai4 --tail 20
+    
+    - echo "部署完成！应用运行在 http://your-server:3000"
+  
+  only:
+    - develop
+  when: manual
+
+# ============================================
+# 清理旧镜像（可选）
+# ============================================
+cleanup:
+  stage: deploy
+  tags:
+    - docker
+  script:
+    - echo "清理旧的 Docker 镜像..."
+    - docker image prune -f --filter "until=168h"  # 清理 7 天前的镜像
+  when: manual
+  only:
+    - main
+
+# ============================================
+# CI/CD Variables 配置说明
+# ============================================
+# 在 GitLab 项目的 Settings > CI/CD > Variables 中配置以下变量：
+#
+# 1. MYSQL_URL (Protected, Masked)
+#    值: mysql://user:password@mysql-host:3306/hongguanai
+#    说明: 数据库连接字符串（敏感信息）
+#
+# 2. REGISTRY (可选，如果不同环境使用不同仓库)
+#    值: your-company-registry.com
+#    说明: Docker 镜像仓库地址
+#
+# 3. KUBE_CONFIG (Protected, File)
+#    值: kubernetes config 文件内容
+#    说明: Kubernetes 集群访问凭证（用于 kubectl 命令）
+
+

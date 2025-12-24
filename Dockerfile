@@ -1,51 +1,52 @@
 # 宏观经济报告 PPT Studio - Docker 配置
 # 支持 Next.js 16 + Puppeteer + MySQL
-# 基于公司内部 Node.js 基础镜像
+# 基于 Node.js Docker 官方镜像
 
 # ============================================
 # Stage 1: 依赖安装
 # ============================================
-# 使用公司内部 Node.js 基础镜像（请替换为实际的镜像地址）
-FROM your-company-registry/nodejs:22 AS deps
+# 使用 Node.js 官方镜像（Debian Slim 版本）
+FROM node:22-slim AS deps
 
 # 安装 Puppeteer 所需的系统依赖
-RUN yum install -y \
-    alsa-lib \
-    atk \
-    at-spi2-atk \
-    at-spi2-core \
-    cairo \
-    cups-libs \
-    dbus-libs \
-    expat \
-    fontconfig \
-    glib2 \
-    gtk3 \
-    libX11 \
-    libX11-xcb \
-    libXcomposite \
-    libXcursor \
-    libXdamage \
-    libXext \
-    libXfixes \
-    libXi \
-    libXrandr \
-    libXrender \
-    libXScrnSaver \
-    libXtst \
-    libdrm \
-    libgbm \
-    mesa-libgbm \
-    nspr \
-    nss \
-    pango \
-    xdg-utils \
-    wget \
+RUN apt-get update && apt-get install -y \
     ca-certificates \
-    && yum clean all && \
-    rm -rf /var/cache/yum
+    fonts-liberation \
+    libasound2 \
+    libatk-bridge2.0-0 \
+    libatk1.0-0 \
+    libatspi2.0-0 \
+    libcups2 \
+    libdbus-1-3 \
+    libdrm2 \
+    libgbm1 \
+    libglib2.0-0 \
+    libgtk-3-0 \
+    libnspr4 \
+    libnss3 \
+    libpango-1.0-0 \
+    libx11-6 \
+    libx11-xcb1 \
+    libxcb1 \
+    libxcomposite1 \
+    libxcursor1 \
+    libxdamage1 \
+    libxext6 \
+    libxfixes3 \
+    libxi6 \
+    libxrandr2 \
+    libxrender1 \
+    libxss1 \
+    libxtst6 \
+    wget \
+    xdg-utils \
+    && apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
+
+# 配置 npm 镜像源（使用淘宝镜像加速）
+RUN npm config set registry https://registry.npmmirror.com
 
 # 复制 package 文件
 COPY package*.json ./
@@ -56,10 +57,19 @@ RUN npm ci --omit=dev
 # ============================================
 # Stage 2: 构建阶段
 # ============================================
-# 使用公司内部 Node.js 基础镜像（请替换为实际的镜像地址）
-FROM your-company-registry/nodejs:22 AS builder
+# 使用 Node.js 官方镜像（Debian Slim 版本）
+FROM node:22-slim AS builder
 
 WORKDIR /app
+
+# 配置 npm 镜像源（使用淘宝镜像加速）
+RUN npm config set registry https://registry.npmmirror.com
+
+# 定义构建参数（从 CI/CD 平台传入）
+ARG MYSQL_URL
+
+# 将构建参数转换为环境变量供 Next.js 构建时使用
+ENV MYSQL_URL=${MYSQL_URL}
 
 # 从 deps 阶段复制 node_modules
 COPY --from=deps /app/node_modules ./node_modules
@@ -77,47 +87,44 @@ RUN npm run build
 # ============================================
 # Stage 3: 生产运行阶段
 # ============================================
-# 使用公司内部 Node.js 基础镜像（请替换为实际的镜像地址）
-FROM your-company-registry/nodejs:22 AS runner
+# 使用 Node.js 官方镜像（Debian Slim 版本）
+FROM node:22-slim AS runner
 
 # 安装 Puppeteer 运行时依赖和中文字体
-RUN yum install -y \
-    alsa-lib \
-    atk \
-    at-spi2-atk \
-    at-spi2-core \
-    cairo \
-    cups-libs \
-    dbus-libs \
-    expat \
-    fontconfig \
-    glib2 \
-    gtk3 \
-    libX11 \
-    libX11-xcb \
-    libXcomposite \
-    libXcursor \
-    libXdamage \
-    libXext \
-    libXfixes \
-    libXi \
-    libXrandr \
-    libXrender \
-    libXScrnSaver \
-    libXtst \
-    libdrm \
-    libgbm \
-    mesa-libgbm \
-    nspr \
-    nss \
-    pango \
-    xdg-utils \
-    wget \
+RUN apt-get update && apt-get install -y \
     ca-certificates \
-    google-noto-cjk-fonts \
-    liberation-fonts \
-    && yum clean all && \
-    rm -rf /var/cache/yum
+    fonts-liberation \
+    fonts-noto-cjk \
+    libasound2 \
+    libatk-bridge2.0-0 \
+    libatk1.0-0 \
+    libatspi2.0-0 \
+    libcups2 \
+    libdbus-1-3 \
+    libdrm2 \
+    libgbm1 \
+    libglib2.0-0 \
+    libgtk-3-0 \
+    libnspr4 \
+    libnss3 \
+    libpango-1.0-0 \
+    libx11-6 \
+    libx11-xcb1 \
+    libxcb1 \
+    libxcomposite1 \
+    libxcursor1 \
+    libxdamage1 \
+    libxext6 \
+    libxfixes3 \
+    libxi6 \
+    libxrandr2 \
+    libxrender1 \
+    libxss1 \
+    libxtst6 \
+    wget \
+    xdg-utils \
+    && apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
