@@ -10,6 +10,13 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   ThumbnailPanel,
   SlidePreview,
   SlideModal,
@@ -27,6 +34,11 @@ import {
   Check,
 } from "lucide-react";
 
+interface Quarter {
+  id: number;
+  quarterId: string;
+}
+
 export default function Home() {
   // State
   const [slides, setSlides] = useState<PPTReport>([]);
@@ -39,6 +51,10 @@ export default function Home() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showSaveSuccess, setShowSaveSuccess] = useState(false);
   const [showExportSuccess, setShowExportSuccess] = useState(false);
+
+  // Quarter state
+  const [quarters, setQuarters] = useState<Quarter[]>([]);
+  const [selectedQuarter, setSelectedQuarter] = useState<number | null>(null);
 
   // Modal state
   const [modalOpen, setModalOpen] = useState(false);
@@ -66,21 +82,45 @@ export default function Home() {
     };
 
     container.addEventListener("wheel", handleWheel, { passive: false });
-    
+
     return () => {
       container.removeEventListener("wheel", handleWheel);
     };
   }, [viewMode, slides.length]);
 
-  // Load initial data
+  // Load quarters on mount
   useEffect(() => {
+    async function loadQuarters() {
+      try {
+        const response = await fetch("/api/quarters");
+        const data = await response.json();
+        if (data.quarters && data.quarters.length > 0) {
+          setQuarters(data.quarters);
+          // Select the first quarter (latest) by default
+          setSelectedQuarter(data.quarters[0].id);
+        }
+      } catch (error) {
+        console.error("Failed to load quarters:", error);
+      }
+    }
+    loadQuarters();
+  }, []);
+
+  // Load report when quarter changes
+  useEffect(() => {
+    if (selectedQuarter === null) return;
+
     async function loadReport() {
       try {
-        const response = await fetch("/api/report");
+        const response = await fetch(`/api/report?quarterId=${selectedQuarter}`);
         const data = await response.json();
         if (data.report) {
           setSlides(data.report);
           setSourceCode(JSON.stringify(data.report, null, 2));
+        } else {
+          // No report for this quarter
+          setSlides([]);
+          setSourceCode("[]");
         }
       } catch (error) {
         console.error("Failed to load report:", error);
@@ -89,7 +129,7 @@ export default function Home() {
       }
     }
     loadReport();
-  }, []);
+  }, [selectedQuarter]);
 
   // Sync source code when slides change
   useEffect(() => {
@@ -113,12 +153,17 @@ export default function Home() {
 
   // Publish report
   const handlePublish = async () => {
+    if (selectedQuarter === null) {
+      alert("请先选择季度");
+      return;
+    }
+
     setIsSaving(true);
     try {
       const response = await fetch("/api/report", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ report: slides }),
+        body: JSON.stringify({ report: slides, quarterId: selectedQuarter }),
       });
 
       if (!response.ok) {
@@ -158,7 +203,7 @@ export default function Home() {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      
+
       setShowExportSuccess(true);
       setTimeout(() => setShowExportSuccess(false), 1000);
     } catch (error) {
@@ -261,9 +306,28 @@ export default function Home() {
       <div className="h-screen flex flex-col bg-slate-100">
         {/* Header */}
         <header className="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-4 shrink-0">
-          <h1 className="text-lg font-semibold text-slate-800">
-            个金宏观经济报告Studio
-          </h1>
+          <div className="flex items-center gap-4">
+            <h1 className="text-lg font-semibold text-slate-800">
+              个金宏观经济报告Studio
+            </h1>
+            {quarters.length > 0 && (
+              <Select
+                value={selectedQuarter?.toString()}
+                onValueChange={(value) => setSelectedQuarter(parseInt(value, 10))}
+              >
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue placeholder="选择季度" />
+                </SelectTrigger>
+                <SelectContent>
+                  {quarters.map((quarter) => (
+                    <SelectItem key={quarter.id} value={quarter.id.toString()}>
+                      {quarter.quarterId}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-2">
               {showSaveSuccess && (
