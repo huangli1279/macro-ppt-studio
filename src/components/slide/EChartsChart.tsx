@@ -23,7 +23,7 @@ export function EChartsChart({ data, className = "" }: EChartsChartProps) {
 
     // Merge default grid settings to maximize chart space
     const option = data as echarts.EChartsOption;
-    
+
     // Calculate appropriate top margin based on title and legend presence
     const hasTitle = option.title && (
       (typeof option.title === 'object' && !Array.isArray(option.title) && option.title.text) ||
@@ -33,18 +33,13 @@ export function EChartsChart({ data, className = "" }: EChartsChartProps) {
       (typeof option.legend === 'object' && !Array.isArray(option.legend)) ||
       (Array.isArray(option.legend) && option.legend.length > 0)
     );
-    
-    // Only apply tight grid margins if there's no title/legend that needs space
-    const defaultTop = hasTitle || hasLegend ? undefined : 8;
-    const defaultBottom = hasLegend ? undefined : 8;
-    
+
     const mergedOption: echarts.EChartsOption = {
       ...option,
       grid: {
-        left: undefined,
-        right: undefined,
-        ...(defaultTop !== undefined ? { top: defaultTop } : {}),
-        ...(defaultBottom !== undefined ? { bottom: defaultBottom } : {}),
+        left: 8,
+        right: 8,
+        bottom: 42,
         containLabel: true,
         ...(option.grid as object || {}),
       },
