@@ -24,12 +24,12 @@ interface SlideRendererProps {
 }
 
 // Render a single chart based on type
-function ChartRenderer({ chart }: { chart: ChartConfig }) {
+function ChartRenderer({ chart, isFullscreen = false }: { chart: ChartConfig; isFullscreen?: boolean }) {
   switch (chart.type) {
     case "table":
-      return <TableChart data={chart.data as TableData} />;
+      return <TableChart data={chart.data as TableData} isFullscreen={isFullscreen} />;
     case "echarts":
-      return <EChartsChart data={chart.data as EChartsData} />;
+      return <EChartsChart data={chart.data as EChartsData} isFullscreen={isFullscreen} />;
     case "image":
       return <ImageChart data={chart.data as ImageData} />;
     default:
@@ -58,16 +58,16 @@ export function SlideRenderer({
   const { title, content, charts } = slide;
   const contentCount = content.length;
   const chartCount = charts.length;
-  
+
   // Adjust sizes based on view mode
   // Priority: isThumbnail > isFullscreen > normal
   const titleSize = isThumbnail ? "text-sm" : isFullscreen ? "text-3xl" : "text-xl";
-  const contentTextSize = isThumbnail ? "text-xs" : isFullscreen ? "text-lg" : "text-sm";
+  const contentTextSize = isThumbnail ? "text-xs" : isFullscreen ? "text-2xl" : "text-xs";
   const padding = isThumbnail ? "p-2" : "p-6";
   const gap = isThumbnail ? "gap-1" : "gap-4";
   const titleMargin = isThumbnail ? "mb-2" : isFullscreen ? "mb-6" : "mb-3";
   const contentChartGap = isThumbnail ? "gap-2" : "gap-12";
-  
+
   // Gap between content and charts
   // Use larger gap in fullscreen mode
   const contentToChartGap = isThumbnail ? '0.5rem' : isFullscreen ? '2rem' : '1.5rem';
@@ -109,7 +109,7 @@ export function SlideRenderer({
           {/* Chart area */}
           {chartCount === 1 && (
             <div className="flex-1 min-h-0 overflow-hidden">
-              <ChartRenderer chart={charts[0]} />
+              <ChartRenderer chart={charts[0]} isFullscreen={isFullscreen} />
             </div>
           )}
         </div>
@@ -134,10 +134,10 @@ export function SlideRenderer({
           {/* Charts row */}
           <div className="flex-1 min-h-0 flex gap-4">
             <div className="flex-1 overflow-hidden">
-              <ChartRenderer chart={charts[0]} />
+              <ChartRenderer chart={charts[0]} isFullscreen={isFullscreen} />
             </div>
             <div className="flex-1 overflow-hidden">
-              <ChartRenderer chart={charts[1]} />
+              <ChartRenderer chart={charts[1]} isFullscreen={isFullscreen} />
             </div>
           </div>
         </div>
@@ -163,15 +163,15 @@ export function SlideRenderer({
             {/* 左列：图表1(上) + 图表2(下) - 使用 flex 确保等高 */}
             <div className="flex-1 flex flex-col gap-3 min-h-0">
               <div className="flex-1 overflow-hidden min-h-0">
-                <ChartRenderer chart={charts[0]} />
+                <ChartRenderer chart={charts[0]} isFullscreen={isFullscreen} />
               </div>
               <div className="flex-1 overflow-hidden min-h-0">
-                <ChartRenderer chart={charts[1]} />
+                <ChartRenderer chart={charts[1]} isFullscreen={isFullscreen} />
               </div>
             </div>
             {/* 右列：图表3 占满整个高度 */}
             <div className="flex-1 overflow-hidden min-h-0">
-              <ChartRenderer chart={charts[2]} />
+              <ChartRenderer chart={charts[2]} isFullscreen={isFullscreen} />
             </div>
           </div>
         </div>
@@ -197,18 +197,18 @@ export function SlideRenderer({
           <div className="flex-1 min-h-0 flex flex-col gap-3">
             <div className="flex-1 flex gap-3 min-h-0">
               <div className="flex-1 overflow-hidden min-h-0">
-                <ChartRenderer chart={charts[0]} />
+                <ChartRenderer chart={charts[0]} isFullscreen={isFullscreen} />
               </div>
               <div className="flex-1 overflow-hidden min-h-0">
-                <ChartRenderer chart={charts[2]} />
+                <ChartRenderer chart={charts[2]} isFullscreen={isFullscreen} />
               </div>
             </div>
             <div className="flex-1 flex gap-3 min-h-0">
               <div className="flex-1 overflow-hidden min-h-0">
-                <ChartRenderer chart={charts[1]} />
+                <ChartRenderer chart={charts[1]} isFullscreen={isFullscreen} />
               </div>
               <div className="flex-1 overflow-hidden min-h-0">
-                <ChartRenderer chart={charts[3]} />
+                <ChartRenderer chart={charts[3]} isFullscreen={isFullscreen} />
               </div>
             </div>
           </div>
@@ -222,9 +222,8 @@ export function SlideRenderer({
         {/* Content section */}
         {contentCount > 0 && (
           <div
-            className={`grid gap-4 ${
-              contentCount <= 2 ? "grid-cols-2" : "grid-cols-2"
-            }`}
+            className={`grid gap-4 ${contentCount <= 2 ? "grid-cols-2" : "grid-cols-2"
+              }`}
           >
             {content.map((text, index) => (
               <div key={index}>
@@ -238,16 +237,16 @@ export function SlideRenderer({
           <>
             {chartCount === 1 && (
               <div className="flex-1 min-h-0 overflow-hidden">
-                <ChartRenderer chart={charts[0]} />
+                <ChartRenderer chart={charts[0]} isFullscreen={isFullscreen} />
               </div>
             )}
             {chartCount === 2 && (
               <div className="flex-1 min-h-0 flex gap-4">
                 <div className="flex-1 overflow-hidden">
-                  <ChartRenderer chart={charts[0]} />
+                  <ChartRenderer chart={charts[0]} isFullscreen={isFullscreen} />
                 </div>
                 <div className="flex-1 overflow-hidden">
-                  <ChartRenderer chart={charts[1]} />
+                  <ChartRenderer chart={charts[1]} isFullscreen={isFullscreen} />
                 </div>
               </div>
             )}
@@ -256,15 +255,15 @@ export function SlideRenderer({
                 {/* 左列：前两个图表上下排列 */}
                 <div className="flex-1 flex flex-col gap-4 min-h-0">
                   <div className="flex-1 overflow-hidden min-h-0">
-                    <ChartRenderer chart={charts[0]} />
+                    <ChartRenderer chart={charts[0]} isFullscreen={isFullscreen} />
                   </div>
                   <div className="flex-1 overflow-hidden min-h-0">
-                    <ChartRenderer chart={charts[1]} />
+                    <ChartRenderer chart={charts[1]} isFullscreen={isFullscreen} />
                   </div>
                 </div>
                 {/* 右列：第3个图表占满高度 */}
                 <div className="flex-1 overflow-hidden min-h-0">
-                  <ChartRenderer chart={charts[2]} />
+                  <ChartRenderer chart={charts[2]} isFullscreen={isFullscreen} />
                 </div>
               </div>
             )}
@@ -272,18 +271,18 @@ export function SlideRenderer({
               <div className="flex-1 min-h-0 flex flex-col gap-4">
                 <div className="flex-1 flex gap-4 min-h-0">
                   <div className="flex-1 overflow-hidden min-h-0">
-                    <ChartRenderer chart={charts[0]} />
+                    <ChartRenderer chart={charts[0]} isFullscreen={isFullscreen} />
                   </div>
                   <div className="flex-1 overflow-hidden min-h-0">
-                    <ChartRenderer chart={charts[1]} />
+                    <ChartRenderer chart={charts[1]} isFullscreen={isFullscreen} />
                   </div>
                 </div>
                 <div className="flex-1 flex gap-4 min-h-0">
                   <div className="flex-1 overflow-hidden min-h-0">
-                    <ChartRenderer chart={charts[2]} />
+                    <ChartRenderer chart={charts[2]} isFullscreen={isFullscreen} />
                   </div>
                   <div className="flex-1 overflow-hidden min-h-0">
-                    <ChartRenderer chart={charts[3]} />
+                    <ChartRenderer chart={charts[3]} isFullscreen={isFullscreen} />
                   </div>
                 </div>
               </div>

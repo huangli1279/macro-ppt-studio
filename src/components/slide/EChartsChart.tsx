@@ -7,9 +7,10 @@ import type { EChartsData } from "@/types/slide";
 interface EChartsChartProps {
   data: EChartsData;
   className?: string;
+  isFullscreen?: boolean;
 }
 
-export function EChartsChart({ data, className = "" }: EChartsChartProps) {
+export function EChartsChart({ data, className = "", isFullscreen = false }: EChartsChartProps) {
   const chartRef = useRef<HTMLDivElement>(null);
   const chartInstance = useRef<echarts.ECharts | null>(null);
 
@@ -34,8 +35,29 @@ export function EChartsChart({ data, className = "" }: EChartsChartProps) {
       (Array.isArray(option.legend) && option.legend.length > 0)
     );
 
+    // Set font size based on fullscreen mode
+    const fontSize = isFullscreen ? 18 : 10;
+
     const mergedOption: echarts.EChartsOption = {
       ...option,
+      textStyle: {
+        fontSize: fontSize,
+        ...(option.textStyle as object || {}),
+      },
+      title: option.title ? {
+        ...(typeof option.title === 'object' && !Array.isArray(option.title) ? option.title : {}),
+        textStyle: {
+          fontSize: isFullscreen ? 22 : 12,
+          ...((typeof option.title === 'object' && !Array.isArray(option.title) && option.title.textStyle) || {}),
+        },
+      } : undefined,
+      legend: option.legend ? {
+        ...(typeof option.legend === 'object' && !Array.isArray(option.legend) ? option.legend : {}),
+        textStyle: {
+          fontSize: fontSize,
+          ...((typeof option.legend === 'object' && !Array.isArray(option.legend) && option.legend.textStyle) || {}),
+        },
+      } : undefined,
       grid: {
         left: 8,
         right: 8,
@@ -44,6 +66,42 @@ export function EChartsChart({ data, className = "" }: EChartsChartProps) {
         ...(option.grid as object || {}),
       },
     };
+
+    // Apply font size to xAxis
+    if (option.xAxis) {
+      const xAxisConfig = option.xAxis as Record<string, unknown>;
+      if (Array.isArray(xAxisConfig)) {
+        (mergedOption as Record<string, unknown>).xAxis = xAxisConfig.map(axis => ({
+          ...axis,
+          axisLabel: { fontSize: fontSize, ...(axis.axisLabel || {}) },
+          nameTextStyle: { fontSize: fontSize, ...(axis.nameTextStyle || {}) },
+        }));
+      } else {
+        (mergedOption as Record<string, unknown>).xAxis = {
+          ...xAxisConfig,
+          axisLabel: { fontSize: fontSize, ...(xAxisConfig.axisLabel as object || {}) },
+          nameTextStyle: { fontSize: fontSize, ...(xAxisConfig.nameTextStyle as object || {}) },
+        };
+      }
+    }
+
+    // Apply font size to yAxis
+    if (option.yAxis) {
+      const yAxisConfig = option.yAxis as Record<string, unknown>;
+      if (Array.isArray(yAxisConfig)) {
+        (mergedOption as Record<string, unknown>).yAxis = yAxisConfig.map(axis => ({
+          ...axis,
+          axisLabel: { fontSize: fontSize, ...(axis.axisLabel || {}) },
+          nameTextStyle: { fontSize: fontSize, ...(axis.nameTextStyle || {}) },
+        }));
+      } else {
+        (mergedOption as Record<string, unknown>).yAxis = {
+          ...yAxisConfig,
+          axisLabel: { fontSize: fontSize, ...(yAxisConfig.axisLabel as object || {}) },
+          nameTextStyle: { fontSize: fontSize, ...(yAxisConfig.nameTextStyle as object || {}) },
+        };
+      }
+    }
 
     // Set options
     chartInstance.current.setOption(mergedOption, true);
@@ -58,7 +116,7 @@ export function EChartsChart({ data, className = "" }: EChartsChartProps) {
     return () => {
       resizeObserver.disconnect();
     };
-  }, [data]);
+  }, [data, isFullscreen]);
 
   // Cleanup on unmount
   useEffect(() => {

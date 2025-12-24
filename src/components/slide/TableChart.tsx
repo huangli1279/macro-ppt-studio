@@ -10,18 +10,22 @@ import {
 interface TableChartProps {
   data: TableData;
   className?: string;
+  isFullscreen?: boolean;
 }
 
-export function TableChart({ data, className = "" }: TableChartProps) {
+export function TableChart({ data, className = "", isFullscreen = false }: TableChartProps) {
   const columns = Object.keys(data);
   if (columns.length === 0) return null;
 
   // Get the maximum row count
   const rowCount = Math.max(...columns.map((col) => data[col].length));
 
+  // Adjust font size based on fullscreen mode
+  const textSize = isFullscreen ? "text-lg" : "text-[10px]";
+
   return (
     <div className={`w-full h-full overflow-auto ${className}`}>
-      <table className="w-full h-full border-collapse text-xs">
+      <table className={`w-full h-full border-collapse ${textSize}`}>
         <thead>
           <tr>
             {columns.map((col) => (
