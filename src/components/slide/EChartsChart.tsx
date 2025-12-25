@@ -66,8 +66,8 @@ export function EChartsChart({ data, className = "", isFullscreen = false }: ECh
         },
       },
       grid: {
-        left: isFullscreen ? 16 : 8,
-        right: isFullscreen ? 16 : 8,
+        left: isFullscreen ? 16 : 12,
+        right: isFullscreen ? 16 : 12,
         top: isFullscreen ? 72 : 58,
         bottom: isFullscreen ? 68 : 32,
         containLabel: true,
