@@ -76,6 +76,11 @@ export function SlideRenderer({
   const chartHGap = isThumbnail ? 'gap-2' : isFullscreen ? 'gap-12' : 'gap-8';
   const chartVGap = isThumbnail ? 'gap-1' : isFullscreen ? 'gap-10' : 'gap-6';
 
+  // Padding for chart area container (left/right, bottom)
+  const chartAreaPaddingX = isThumbnail ? 'px-1' : isFullscreen ? 'px-12' : 'px-8';
+  const chartAreaPaddingBottom = isThumbnail ? 'pb-1' : isFullscreen ? 'pb-8' : 'pb-6';
+  const chartAreaPadding = `${chartAreaPaddingX} ${chartAreaPaddingBottom}`;
+
   // Determine layout based on content and chart counts
   const renderLayout = () => {
     // Empty slide
@@ -112,7 +117,7 @@ export function SlideRenderer({
           )}
           {/* Chart area */}
           {chartCount === 1 && (
-            <div className="flex-1 min-h-0 overflow-hidden">
+            <div className={`flex-1 min-h-0 overflow-hidden ${chartAreaPadding}`}>
               <ChartRenderer chart={charts[0]} isFullscreen={isFullscreen} />
             </div>
           )}
@@ -136,7 +141,7 @@ export function SlideRenderer({
             </div>
           )}
           {/* Charts row */}
-          <div className={`flex-1 min-h-0 flex ${chartHGap}`}>
+          <div className={`flex-1 min-h-0 flex ${chartHGap} ${chartAreaPadding}`}>
             <div className="flex-1 overflow-hidden">
               <ChartRenderer chart={charts[0]} isFullscreen={isFullscreen} />
             </div>
@@ -163,7 +168,7 @@ export function SlideRenderer({
             </div>
           </div>
           {/* Charts area: 左列两个小图表(上下)，右列一个大图表 */}
-          <div className={`flex-1 min-h-0 flex ${chartHGap}`}>
+          <div className={`flex-1 min-h-0 flex ${chartHGap} ${chartAreaPadding}`}>
             {/* 左列：图表1(上) + 图表2(下) - 使用 flex 确保等高 */}
             <div className={`flex-1 flex flex-col ${chartVGap} min-h-0`}>
               <div className="flex-1 overflow-hidden min-h-0">
@@ -198,7 +203,7 @@ export function SlideRenderer({
             </div>
           </div>
           {/* Charts grid 2x2 - 使用 flex 确保高度一致 */}
-          <div className={`flex-1 min-h-0 flex flex-col ${chartVGap}`}>
+          <div className={`flex-1 min-h-0 flex flex-col ${chartVGap} ${chartAreaPadding}`}>
             <div className={`flex-1 flex ${chartHGap} min-h-0`}>
               <div className="flex-1 overflow-hidden min-h-0">
                 <ChartRenderer chart={charts[0]} isFullscreen={isFullscreen} />
@@ -240,12 +245,12 @@ export function SlideRenderer({
         {chartCount > 0 && (
           <>
             {chartCount === 1 && (
-              <div className="flex-1 min-h-0 overflow-hidden">
+              <div className={`flex-1 min-h-0 overflow-hidden ${chartAreaPadding}`}>
                 <ChartRenderer chart={charts[0]} isFullscreen={isFullscreen} />
               </div>
             )}
             {chartCount === 2 && (
-              <div className={`flex-1 min-h-0 flex ${chartHGap}`}>
+              <div className={`flex-1 min-h-0 flex ${chartHGap} ${chartAreaPadding}`}>
                 <div className="flex-1 overflow-hidden">
                   <ChartRenderer chart={charts[0]} isFullscreen={isFullscreen} />
                 </div>
@@ -255,7 +260,7 @@ export function SlideRenderer({
               </div>
             )}
             {chartCount === 3 && (
-              <div className={`flex-1 min-h-0 flex ${chartHGap}`}>
+              <div className={`flex-1 min-h-0 flex ${chartHGap} ${chartAreaPadding}`}>
                 {/* 左列：前两个图表上下排列 */}
                 <div className={`flex-1 flex flex-col ${chartVGap} min-h-0`}>
                   <div className="flex-1 overflow-hidden min-h-0">
@@ -272,7 +277,7 @@ export function SlideRenderer({
               </div>
             )}
             {chartCount === 4 && (
-              <div className={`flex-1 min-h-0 flex flex-col ${chartVGap}`}>
+              <div className={`flex-1 min-h-0 flex flex-col ${chartVGap} ${chartAreaPadding}`}>
                 <div className={`flex-1 flex ${chartHGap} min-h-0`}>
                   <div className="flex-1 overflow-hidden min-h-0">
                     <ChartRenderer chart={charts[0]} isFullscreen={isFullscreen} />
