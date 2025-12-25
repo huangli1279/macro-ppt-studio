@@ -453,25 +453,27 @@ export default function Home() {
               </Tooltip>
             </div>
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={handleExportPDF}
-                  disabled={isExporting || slides.length === 0}
-                >
-                  {isExporting ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : showExportSuccess ? (
-                    <Check className="h-4 w-4 text-slate-800" />
-                  ) : (
-                    <FileDown className="h-4 w-4" />
-                  )}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>导出PDF</TooltipContent>
-            </Tooltip>
+            {process.env.NEXT_PUBLIC_ENABLE_PDF_EXPORT !== "false" && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={handleExportPDF}
+                    disabled={isExporting || slides.length === 0}
+                  >
+                    {isExporting ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : showExportSuccess ? (
+                      <Check className="h-4 w-4 text-slate-800" />
+                    ) : (
+                      <FileDown className="h-4 w-4" />
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>导出PDF</TooltipContent>
+              </Tooltip>
+            )}
 
             <Tooltip>
               <TooltipTrigger asChild>
