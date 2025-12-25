@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import { flushSync } from "react-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -51,7 +51,7 @@ interface Quarter {
   quarterId: string;
 }
 
-export default function Home() {
+function HomeContent() {
   const searchParams = useSearchParams();
   const isEditMode = searchParams.get("type") === "write";
   const isReadOnly = !isEditMode;
@@ -665,5 +665,19 @@ export default function Home() {
         </Dialog>
       </div>
     </TooltipProvider>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense
+      fallback={
+        <div className="h-screen flex items-center justify-center bg-slate-100">
+          <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+        </div>
+      }
+    >
+      <HomeContent />
+    </Suspense>
   );
 }
