@@ -132,7 +132,7 @@ export function SlideRenderer({
             </div>
           )}
           {/* Charts row */}
-          <div className="flex-1 min-h-0 flex gap-4">
+          <div className="flex-1 min-h-0 flex gap-8">
             <div className="flex-1 overflow-hidden">
               <ChartRenderer chart={charts[0]} isFullscreen={isFullscreen} />
             </div>
@@ -159,9 +159,9 @@ export function SlideRenderer({
             </div>
           </div>
           {/* Charts area: 左列两个小图表(上下)，右列一个大图表 */}
-          <div className="flex-1 min-h-0 flex gap-4">
+          <div className="flex-1 min-h-0 flex gap-8">
             {/* 左列：图表1(上) + 图表2(下) - 使用 flex 确保等高 */}
-            <div className="flex-1 flex flex-col gap-3 min-h-0">
+            <div className="flex-1 flex flex-col gap-6 min-h-0">
               <div className="flex-1 overflow-hidden min-h-0">
                 <ChartRenderer chart={charts[0]} isFullscreen={isFullscreen} />
               </div>
@@ -194,8 +194,8 @@ export function SlideRenderer({
             </div>
           </div>
           {/* Charts grid 2x2 - 使用 flex 确保高度一致 */}
-          <div className="flex-1 min-h-0 flex flex-col gap-3">
-            <div className="flex-1 flex gap-3 min-h-0">
+          <div className="flex-1 min-h-0 flex flex-col gap-6">
+            <div className="flex-1 flex gap-6 min-h-0">
               <div className="flex-1 overflow-hidden min-h-0">
                 <ChartRenderer chart={charts[0]} isFullscreen={isFullscreen} />
               </div>
@@ -203,7 +203,7 @@ export function SlideRenderer({
                 <ChartRenderer chart={charts[2]} isFullscreen={isFullscreen} />
               </div>
             </div>
-            <div className="flex-1 flex gap-3 min-h-0">
+            <div className="flex-1 flex gap-6 min-h-0">
               <div className="flex-1 overflow-hidden min-h-0">
                 <ChartRenderer chart={charts[1]} isFullscreen={isFullscreen} />
               </div>
@@ -241,7 +241,7 @@ export function SlideRenderer({
               </div>
             )}
             {chartCount === 2 && (
-              <div className="flex-1 min-h-0 flex gap-4">
+              <div className="flex-1 min-h-0 flex gap-8">
                 <div className="flex-1 overflow-hidden">
                   <ChartRenderer chart={charts[0]} isFullscreen={isFullscreen} />
                 </div>
@@ -251,9 +251,9 @@ export function SlideRenderer({
               </div>
             )}
             {chartCount === 3 && (
-              <div className="flex-1 min-h-0 flex gap-4">
+              <div className="flex-1 min-h-0 flex gap-8">
                 {/* 左列：前两个图表上下排列 */}
-                <div className="flex-1 flex flex-col gap-4 min-h-0">
+                <div className="flex-1 flex flex-col gap-6 min-h-0">
                   <div className="flex-1 overflow-hidden min-h-0">
                     <ChartRenderer chart={charts[0]} isFullscreen={isFullscreen} />
                   </div>
@@ -268,8 +268,8 @@ export function SlideRenderer({
               </div>
             )}
             {chartCount === 4 && (
-              <div className="flex-1 min-h-0 flex flex-col gap-4">
-                <div className="flex-1 flex gap-4 min-h-0">
+              <div className="flex-1 min-h-0 flex flex-col gap-6">
+                <div className="flex-1 flex gap-6 min-h-0">
                   <div className="flex-1 overflow-hidden min-h-0">
                     <ChartRenderer chart={charts[0]} isFullscreen={isFullscreen} />
                   </div>
@@ -277,7 +277,7 @@ export function SlideRenderer({
                     <ChartRenderer chart={charts[1]} isFullscreen={isFullscreen} />
                   </div>
                 </div>
-                <div className="flex-1 flex gap-4 min-h-0">
+                <div className="flex-1 flex gap-6 min-h-0">
                   <div className="flex-1 overflow-hidden min-h-0">
                     <ChartRenderer chart={charts[2]} isFullscreen={isFullscreen} />
                   </div>
