@@ -65,12 +65,12 @@ export function SlideRenderer({
   const contentTextSize = isThumbnail ? "text-xs" : isFullscreen ? "text-2xl" : "text-xs";
   const padding = isThumbnail ? "p-2" : "p-6";
   const gap = isThumbnail ? "gap-1" : "gap-4";
-  const titleMargin = isThumbnail ? "mb-2" : isFullscreen ? "mb-6" : "mb-3";
+  const titleMargin = isThumbnail ? "mb-2" : isFullscreen ? "mb-8" : "mb-5";
   const contentChartGap = isThumbnail ? "gap-2" : "gap-12";
 
   // Gap between content and charts
   // Use larger gap in fullscreen mode
-  const contentToChartGap = isThumbnail ? '0.5rem' : isFullscreen ? '2rem' : '1.5rem';
+  const contentToChartGap = isThumbnail ? '0.5rem' : isFullscreen ? '3rem' : '2rem';
 
   // Determine layout based on content and chart counts
   const renderLayout = () => {
