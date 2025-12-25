@@ -43,6 +43,7 @@ interface ThumbnailItemProps {
   slide: SlideData;
   index: number;
   isSelected: boolean;
+  isReadOnly?: boolean;
   onClick: () => void;
   onEdit: () => void;
   onDelete: () => void;
@@ -53,6 +54,7 @@ function SortableThumbnail({
   slide,
   index,
   isSelected,
+  isReadOnly,
   onClick,
   onEdit,
   onDelete,
@@ -63,7 +65,7 @@ function SortableThumbnail({
     setNodeRef,
     transform,
     isDragging,
-  } = useSortable({ id });
+  } = useSortable({ id, disabled: isReadOnly });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -103,33 +105,35 @@ function SortableThumbnail({
       </div>
 
       {/* Edit menu - shows on hover */}
-      <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="secondary"
-              size="icon"
-              className="h-6 w-6 bg-black/60 hover:bg-black/80"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <MoreHorizontal className="h-3 w-3 text-white" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={onEdit}>
-              <Edit className="h-4 w-4 mr-2" />
-              编辑
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={onDelete}
-              className="text-red-600 focus:text-red-600"
-            >
-              <Trash2 className="h-4 w-4 mr-2" />
-              删除
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+      {!isReadOnly && (
+        <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="secondary"
+                size="icon"
+                className="h-6 w-6 bg-black/60 hover:bg-black/80"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <MoreHorizontal className="h-3 w-3 text-white" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={onEdit}>
+                <Edit className="h-4 w-4 mr-2" />
+                编辑
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={onDelete}
+                className="text-red-600 focus:text-red-600"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                删除
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      )}
     </div>
   );
 }
@@ -160,6 +164,7 @@ interface ThumbnailPanelProps {
   onAddSlide: (insertIndex?: number) => void;
   onEditSlide: (index: number) => void;
   onSave?: (slides: PPTReport) => void;
+  isReadOnly?: boolean;
 }
 
 export function ThumbnailPanel({
@@ -170,6 +175,7 @@ export function ThumbnailPanel({
   onAddSlide,
   onEditSlide,
   onSave,
+  isReadOnly,
 }: ThumbnailPanelProps) {
   const [deleteConfirmIndex, setDeleteConfirmIndex] = useState<number | null>(null);
 
@@ -238,7 +244,7 @@ export function ThumbnailPanel({
         >
           <div className="p-2 space-y-1">
             {/* Add button at top - only show when no slides */}
-            {slides.length === 0 && (
+            {slides.length === 0 && !isReadOnly && (
               <button
                 className="w-full aspect-video rounded-lg border-2 border-dashed border-slate-300 hover:border-blue-400 hover:bg-blue-50 transition-colors flex items-center justify-center"
                 onClick={() => onAddSlide(0)}
@@ -254,7 +260,7 @@ export function ThumbnailPanel({
             >
               {slides.map((slide, index) => (
                 <div key={`slide-${index}`}>
-                  {index === 0 && (
+                  {index === 0 && !isReadOnly && (
                     <InsertButton onClick={() => onAddSlide(0)} />
                   )}
                   <SortableThumbnail
@@ -262,11 +268,12 @@ export function ThumbnailPanel({
                     slide={slide}
                     index={index}
                     isSelected={selectedIndex === index}
+                    isReadOnly={isReadOnly}
                     onClick={() => onSelectSlide(index)}
                     onEdit={() => onEditSlide(index)}
                     onDelete={() => handleDeleteSlide(index)}
                   />
-                  {index < slides.length - 1 && (
+                  {index < slides.length - 1 && !isReadOnly && (
                     <InsertButton onClick={() => onAddSlide(index + 1)} />
                   )}
                 </div>
@@ -274,7 +281,7 @@ export function ThumbnailPanel({
             </SortableContext>
 
             {/* Add button at bottom if there are slides */}
-            {slides.length > 0 && (
+            {slides.length > 0 && !isReadOnly && (
               <button
                 className="w-full aspect-video rounded-lg border-2 border-dashed border-slate-300 hover:border-blue-400 hover:bg-blue-50 transition-colors flex items-center justify-center"
                 onClick={() => onAddSlide()}

@@ -23,6 +23,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useSearchParams } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import {
   ThumbnailPanel,
@@ -51,6 +52,10 @@ interface Quarter {
 }
 
 export default function Home() {
+  const searchParams = useSearchParams();
+  const isEditMode = searchParams.get("type") === "write";
+  const isReadOnly = !isEditMode;
+
   // State
   const [slides, setSlides] = useState<PPTReport>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -415,6 +420,8 @@ export default function Home() {
                       setNewQuarterId("");
                       setAddQuarterOpen(true);
                     }}
+                    disabled={isReadOnly}
+                    className={isReadOnly ? "hidden" : ""}
                   >
                     <Plus className="h-4 w-4" />
                   </Button>
@@ -445,23 +452,25 @@ export default function Home() {
                   保存成功
                 </span>
               )}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={handlePublish}
-                    disabled={isSaving}
-                  >
-                    {isSaving ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Save className="h-4 w-4" />
-                    )}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>保存</TooltipContent>
-              </Tooltip>
+              {!isReadOnly && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={handlePublish}
+                      disabled={isSaving}
+                    >
+                      {isSaving ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Save className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>保存</TooltipContent>
+                </Tooltip>
+              )}
             </div>
 
             {process.env.NEXT_PUBLIC_ENABLE_PDF_EXPORT !== "false" && (
@@ -486,38 +495,42 @@ export default function Home() {
               </Tooltip>
             )}
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => handleEditSlide(selectedIndex)}
-                  disabled={slides.length === 0}
-                >
-                  <Edit className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>编辑当前幻灯片</TooltipContent>
-            </Tooltip>
+            {!isReadOnly && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => handleEditSlide(selectedIndex)}
+                    disabled={slides.length === 0}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>编辑当前幻灯片</TooltipContent>
+              </Tooltip>
+            )}
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={toggleViewMode}
-                >
-                  {viewMode === "preview" ? (
-                    <Code className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                {viewMode === "preview" ? "源码模式" : "预览模式"}
-              </TooltipContent>
-            </Tooltip>
+            {!isReadOnly && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={toggleViewMode}
+                  >
+                    {viewMode === "preview" ? (
+                      <Code className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {viewMode === "preview" ? "源码模式" : "预览模式"}
+                </TooltipContent>
+              </Tooltip>
+            )}
 
             <Tooltip>
               <TooltipTrigger asChild>
@@ -548,6 +561,7 @@ export default function Home() {
                 onAddSlide={handleAddSlide}
                 onEditSlide={handleEditSlide}
                 onSave={saveToApi}
+                isReadOnly={isReadOnly}
               />
 
               {/* Slide preview */}
