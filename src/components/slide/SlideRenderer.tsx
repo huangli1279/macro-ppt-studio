@@ -63,7 +63,7 @@ export function SlideRenderer({
   // Priority: isThumbnail > isFullscreen > normal
   const titleSize = isThumbnail ? "text-sm" : isFullscreen ? "text-3xl" : "text-xl";
   const contentTextSize = isThumbnail ? "text-xs" : isFullscreen ? "text-2xl" : "text-xs";
-  const padding = isThumbnail ? "p-2" : isFullscreen ? "pt-6 px-6 pb-14" : "p-6";
+  const padding = isThumbnail ? "p-2" : isFullscreen ? "pt-12 px-12 pb-12" : "p-6";
   const gap = isThumbnail ? "gap-1" : "gap-4";
   const titleMargin = isThumbnail ? "mb-2" : isFullscreen ? "mb-8" : "mb-5";
   const contentChartGap = isThumbnail ? "gap-2" : "gap-12";
