@@ -68,7 +68,7 @@ export function EChartsChart({ data, className = "", isFullscreen = false }: ECh
       grid: {
         left: 8,
         right: 8,
-        bottom: 42,
+        bottom: 32,
         containLabel: true,
         ...(option.grid as object || {}),
       },
