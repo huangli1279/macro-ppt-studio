@@ -36,7 +36,7 @@ export function EChartsChart({ data, className = "", isFullscreen = false }: ECh
     );
 
     // Set font size based on fullscreen mode
-    const fontSize = isFullscreen ? 18 : 10;
+    const fontSize = isFullscreen ? 16 : 8;
 
     const mergedOption: echarts.EChartsOption = {
       ...option,
@@ -58,6 +58,13 @@ export function EChartsChart({ data, className = "", isFullscreen = false }: ECh
           ...((typeof option.legend === 'object' && !Array.isArray(option.legend) && option.legend.textStyle) || {}),
         },
       } : undefined,
+      tooltip: {
+        ...(typeof option.tooltip === 'object' && !Array.isArray(option.tooltip) ? option.tooltip : {}),
+        textStyle: {
+          fontSize: isFullscreen ? 14 : 8,
+          ...((typeof option.tooltip === 'object' && !Array.isArray(option.tooltip) && (option.tooltip as Record<string, unknown>).textStyle) as object || {}),
+        },
+      },
       grid: {
         left: 8,
         right: 8,

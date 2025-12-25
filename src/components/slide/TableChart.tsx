@@ -21,7 +21,7 @@ export function TableChart({ data, className = "", isFullscreen = false }: Table
   const rowCount = Math.max(...columns.map((col) => data[col].length));
 
   // Adjust font size based on fullscreen mode
-  const textSize = isFullscreen ? "text-lg" : "text-[10px]";
+  const textSize = isFullscreen ? "text-base" : "text-[10px]";
 
   return (
     <div className={`w-full h-full overflow-auto ${className}`}>
