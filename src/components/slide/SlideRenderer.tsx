@@ -98,21 +98,10 @@ export function SlideRenderer({
         <div className="flex-1 flex flex-col" style={{ gap: contentToChartGap }}>
           {/* Content row */}
           {contentCount > 0 && (
-            <div className="flex gap-8">
-              {contentCount === 1 ? (
-                <div className="flex-1">
-                  <ContentItem text={content[0]} textSize={contentTextSize} />
-                </div>
-              ) : (
-                <>
-                  <div className="flex-1">
-                    <ContentItem text={content[0]} textSize={contentTextSize} />
-                  </div>
-                  <div className="flex-1">
-                    <ContentItem text={content[1]} textSize={contentTextSize} />
-                  </div>
-                </>
-              )}
+            <div className="flex flex-col gap-4">
+              {content.map((text, index) => (
+                <ContentItem key={index} text={text} textSize={contentTextSize} />
+              ))}
             </div>
           )}
           {/* Chart area */}
@@ -131,21 +120,10 @@ export function SlideRenderer({
         <div className="flex-1 flex flex-col" style={{ gap: contentToChartGap }}>
           {/* Content row */}
           {contentCount > 0 && (
-            <div className="flex gap-8">
-              {contentCount === 1 ? (
-                <div className="flex-1">
-                  {content[0] && <ContentItem text={content[0]} textSize={contentTextSize} />}
-                </div>
-              ) : (
-                <>
-                  <div className="flex-1">
-                    {content[0] && <ContentItem text={content[0]} textSize={contentTextSize} />}
-                  </div>
-                  <div className="flex-1">
-                    {content[1] && <ContentItem text={content[1]} textSize={contentTextSize} />}
-                  </div>
-                </>
-              )}
+            <div className="flex flex-col gap-4">
+              {content.map((text, index) => (
+                <ContentItem key={index} text={text} textSize={contentTextSize} />
+              ))}
             </div>
           )}
           {/* Charts row */}
@@ -238,15 +216,28 @@ export function SlideRenderer({
       <div className="flex-1 flex flex-col" style={{ gap: contentToChartGap }}>
         {/* Content section */}
         {contentCount > 0 && (
-          <div
-            className={`grid gap-4 ${contentCount === 1 ? "grid-cols-1" : "grid-cols-2"}`}
-          >
-            {content.map((text, index) => (
-              <div key={index}>
-                <ContentItem text={text} textSize={contentTextSize} />
+          <>
+            {contentCount <= 2 ? (
+              <div className="flex flex-col gap-4">
+                {content.map((text, index) => (
+                  <ContentItem key={index} text={text} textSize={contentTextSize} />
+                ))}
               </div>
-            ))}
-          </div>
+            ) : (
+              <div className="flex gap-4">
+                <div className="flex-1 flex flex-col gap-4">
+                  {content.slice(0, Math.ceil(contentCount / 2)).map((text, index) => (
+                    <ContentItem key={index} text={text} textSize={contentTextSize} />
+                  ))}
+                </div>
+                <div className="flex-1 flex flex-col gap-4">
+                  {content.slice(Math.ceil(contentCount / 2)).map((text, index) => (
+                    <ContentItem key={index} text={text} textSize={contentTextSize} />
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
         )}
         {/* Charts section */}
         {chartCount > 0 && (
