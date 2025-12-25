@@ -26,6 +26,15 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { SlideData, PPTReport } from "@/types/slide";
 import { SlideRenderer } from "@/components/slide";
@@ -67,16 +76,15 @@ function SortableThumbnail({
       style={style}
       {...attributes}
       {...listeners}
-      className={`group relative cursor-pointer rounded-lg overflow-hidden border-2 transition-all ${
-        isSelected
-          ? "border-blue-500 shadow-md"
-          : "border-transparent hover:border-slate-300"
-      }`}
+      className={`group relative cursor-pointer rounded-lg overflow-hidden border-2 transition-all ${isSelected
+        ? "border-blue-500 shadow-md"
+        : "border-transparent hover:border-slate-300"
+        }`}
       onClick={onClick}
     >
       {/* Thumbnail preview */}
       <div className="w-full aspect-video bg-white overflow-hidden pointer-events-none relative">
-        <div 
+        <div
           className="absolute inset-0 flex items-center justify-center"
           style={{
             transform: 'scale(0.133)',
@@ -151,6 +159,7 @@ interface ThumbnailPanelProps {
   onSlidesChange: (slides: PPTReport) => void;
   onAddSlide: (insertIndex?: number) => void;
   onEditSlide: (index: number) => void;
+  onSave?: (slides: PPTReport) => void;
 }
 
 export function ThumbnailPanel({
@@ -160,7 +169,10 @@ export function ThumbnailPanel({
   onSlidesChange,
   onAddSlide,
   onEditSlide,
+  onSave,
 }: ThumbnailPanelProps) {
+  const [deleteConfirmIndex, setDeleteConfirmIndex] = useState<number | null>(null);
+
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -194,15 +206,26 @@ export function ThumbnailPanel({
   };
 
   const handleDeleteSlide = (index: number) => {
-    const newSlides = slides.filter((_, i) => i !== index);
+    setDeleteConfirmIndex(index);
+  };
+
+  const confirmDelete = () => {
+    if (deleteConfirmIndex === null) return;
+
+    const newSlides = slides.filter((_, i) => i !== deleteConfirmIndex);
     onSlidesChange(newSlides);
+    if (onSave) {
+      onSave(newSlides);
+    }
 
     // Update selected index
     if (selectedIndex >= newSlides.length) {
       onSelectSlide(Math.max(0, newSlides.length - 1));
-    } else if (selectedIndex > index) {
+    } else if (selectedIndex > deleteConfirmIndex) {
       onSelectSlide(selectedIndex - 1);
     }
+
+    setDeleteConfirmIndex(null);
   };
 
   return (
@@ -259,6 +282,23 @@ export function ThumbnailPanel({
           </div>
         </DndContext>
       </ScrollArea>
+
+      <Dialog open={deleteConfirmIndex !== null} onOpenChange={(open) => !open && setDeleteConfirmIndex(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>确认删除</DialogTitle>
+            <DialogDescription>
+              您确定要删除这张幻灯片吗？此操作无法撤销。
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">取消</Button>
+            </DialogClose>
+            <Button variant="destructive" onClick={confirmDelete}>确认删除</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

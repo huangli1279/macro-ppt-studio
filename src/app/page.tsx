@@ -546,6 +546,7 @@ export default function Home() {
                 onSlidesChange={setSlides}
                 onAddSlide={handleAddSlide}
                 onEditSlide={handleEditSlide}
+                onSave={saveToApi}
               />
 
               {/* Slide preview */}
