@@ -42,6 +42,7 @@ import {
   Check,
   Plus,
   RefreshCw,
+  Edit,
 } from "lucide-react";
 
 interface Quarter {
@@ -483,6 +484,20 @@ export default function Home() {
                 <TooltipContent>导出PDF</TooltipContent>
               </Tooltip>
             )}
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => handleEditSlide(selectedIndex)}
+                  disabled={slides.length === 0}
+                >
+                  <Edit className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>编辑当前幻灯片</TooltipContent>
+            </Tooltip>
 
             <Tooltip>
               <TooltipTrigger asChild>
