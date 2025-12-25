@@ -177,18 +177,18 @@ export function SlideRenderer({
           </div>
           {/* Charts area: 左列两个小图表(上下)，右列一个大图表 */}
           <div className={`flex-1 min-h-0 flex ${chartHGap} ${chartAreaPadding}`}>
-            {/* 左列：图表1(上) + 图表2(下) - 使用 flex 确保等高 */}
+            {/* Left column: Chart 1 (Full height) */}
+            <div className="flex-1 overflow-hidden min-h-0">
+              <ChartRenderer chart={charts[0]} isFullscreen={isFullscreen} />
+            </div>
+            {/* Right column: Chart 2 (Top) + Chart 3 (Bottom) */}
             <div className={`flex-1 flex flex-col ${chartVGap} min-h-0`}>
-              <div className="flex-1 overflow-hidden min-h-0">
-                <ChartRenderer chart={charts[0]} isFullscreen={isFullscreen} />
-              </div>
               <div className="flex-1 overflow-hidden min-h-0">
                 <ChartRenderer chart={charts[1]} isFullscreen={isFullscreen} />
               </div>
-            </div>
-            {/* 右列：图表3 占满整个高度 */}
-            <div className="flex-1 overflow-hidden min-h-0">
-              <ChartRenderer chart={charts[2]} isFullscreen={isFullscreen} />
+              <div className="flex-1 overflow-hidden min-h-0">
+                <ChartRenderer chart={charts[2]} isFullscreen={isFullscreen} />
+              </div>
             </div>
           </div>
         </div>
@@ -268,18 +268,18 @@ export function SlideRenderer({
             )}
             {chartCount === 3 && (
               <div className={`flex-1 min-h-0 flex ${chartHGap} ${chartAreaPadding}`}>
-                {/* 左列：前两个图表上下排列 */}
+                {/* Left column: Chart 1 (Full height) */}
+                <div className="flex-1 overflow-hidden min-h-0">
+                  <ChartRenderer chart={charts[0]} isFullscreen={isFullscreen} />
+                </div>
+                {/* Right column: Chart 2 (Top) + Chart 3 (Bottom) */}
                 <div className={`flex-1 flex flex-col ${chartVGap} min-h-0`}>
-                  <div className="flex-1 overflow-hidden min-h-0">
-                    <ChartRenderer chart={charts[0]} isFullscreen={isFullscreen} />
-                  </div>
                   <div className="flex-1 overflow-hidden min-h-0">
                     <ChartRenderer chart={charts[1]} isFullscreen={isFullscreen} />
                   </div>
-                </div>
-                {/* 右列：第3个图表占满高度 */}
-                <div className="flex-1 overflow-hidden min-h-0">
-                  <ChartRenderer chart={charts[2]} isFullscreen={isFullscreen} />
+                  <div className="flex-1 overflow-hidden min-h-0">
+                    <ChartRenderer chart={charts[2]} isFullscreen={isFullscreen} />
+                  </div>
                 </div>
               </div>
             )}
