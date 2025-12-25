@@ -20,3 +20,50 @@ export async function GET() {
         );
     }
 }
+
+// POST: Create a new quarter
+export async function POST(request: Request) {
+    try {
+        const body = await request.json();
+        const { quarterId } = body;
+
+        // Validate quarterId format (e.g., 2024Q1, 2024Q2, etc.)
+        if (!quarterId || typeof quarterId !== "string") {
+            return NextResponse.json(
+                { error: "季度ID为必填项" },
+                { status: 400 }
+            );
+        }
+
+        const quarterPattern = /^\d{4}Q[1-4]$/;
+        if (!quarterPattern.test(quarterId)) {
+            return NextResponse.json(
+                { error: "季度ID格式不正确，请使用 YYYYQ1-Q4 格式（如 2024Q1）" },
+                { status: 400 }
+            );
+        }
+
+        // Insert the new quarter
+        const [newQuarter] = await db
+            .insert(pptQuarter)
+            .values({ quarterId })
+            .returning();
+
+        return NextResponse.json({ quarter: newQuarter });
+    } catch (error: unknown) {
+        console.error("Failed to create quarter:", error);
+
+        // Check for unique constraint violation
+        if (error && typeof error === "object" && "code" in error && error.code === "23505") {
+            return NextResponse.json(
+                { error: "该季度已存在" },
+                { status: 409 }
+            );
+        }
+
+        return NextResponse.json(
+            { error: "创建季度失败" },
+            { status: 500 }
+        );
+    }
+}

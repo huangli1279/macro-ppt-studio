@@ -17,6 +17,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import {
   ThumbnailPanel,
   SlidePreview,
   SlideModal,
@@ -32,6 +40,7 @@ import {
   Maximize,
   Loader2,
   Check,
+  Plus,
 } from "lucide-react";
 
 interface Quarter {
@@ -51,6 +60,12 @@ export default function Home() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showSaveSuccess, setShowSaveSuccess] = useState(false);
   const [showExportSuccess, setShowExportSuccess] = useState(false);
+
+  // Add quarter dialog state
+  const [addQuarterOpen, setAddQuarterOpen] = useState(false);
+  const [newQuarterId, setNewQuarterId] = useState("");
+  const [isAddingQuarter, setIsAddingQuarter] = useState(false);
+  const [addQuarterError, setAddQuarterError] = useState("");
 
   // Quarter state
   const [quarters, setQuarters] = useState<Quarter[]>([]);
@@ -105,6 +120,45 @@ export default function Home() {
     }
     loadQuarters();
   }, []);
+
+  // Add new quarter
+  const handleAddQuarter = async () => {
+    if (!newQuarterId.trim()) {
+      setAddQuarterError("请输入季度ID");
+      return;
+    }
+
+    setIsAddingQuarter(true);
+    setAddQuarterError("");
+
+    try {
+      const response = await fetch("/api/quarters", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ quarterId: newQuarterId.trim() }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setAddQuarterError(data.error || "创建季度失败");
+        return;
+      }
+
+      // Add new quarter to list and select it (maintain descending order)
+      setQuarters((prev) =>
+        [data.quarter, ...prev].sort((a, b) => b.quarterId.localeCompare(a.quarterId))
+      );
+      setSelectedQuarter(data.quarter.id);
+      setAddQuarterOpen(false);
+      setNewQuarterId("");
+    } catch (error) {
+      console.error("Failed to add quarter:", error);
+      setAddQuarterError("创建季度失败，请重试");
+    } finally {
+      setIsAddingQuarter(false);
+    }
+  };
 
   // Load report when quarter changes
   useEffect(() => {
@@ -310,23 +364,41 @@ export default function Home() {
             <h1 className="text-lg font-semibold text-slate-800">
               个金宏观经济报告Studio
             </h1>
-            {quarters.length > 0 && (
-              <Select
-                value={selectedQuarter?.toString()}
-                onValueChange={(value) => setSelectedQuarter(parseInt(value, 10))}
-              >
-                <SelectTrigger className="w-[140px]">
-                  <SelectValue placeholder="选择季度" />
-                </SelectTrigger>
-                <SelectContent>
-                  {quarters.map((quarter) => (
-                    <SelectItem key={quarter.id} value={quarter.id.toString()}>
-                      {quarter.quarterId}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
+            <div className="flex items-center gap-2">
+              {quarters.length > 0 && (
+                <Select
+                  value={selectedQuarter?.toString()}
+                  onValueChange={(value) => setSelectedQuarter(parseInt(value, 10))}
+                >
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue placeholder="选择季度" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {quarters.map((quarter) => (
+                      <SelectItem key={quarter.id} value={quarter.id.toString()}>
+                        {quarter.quarterId}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => {
+                      setAddQuarterError("");
+                      setNewQuarterId("");
+                      setAddQuarterOpen(true);
+                    }}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>新增季度</TooltipContent>
+              </Tooltip>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-2">
@@ -465,6 +537,63 @@ export default function Home() {
             onClose={() => setIsFullscreen(false)}
           />
         )}
+
+        {/* Add Quarter Dialog */}
+        <Dialog open={addQuarterOpen} onOpenChange={setAddQuarterOpen}>
+          <DialogContent className="sm:max-w-[400px]">
+            <DialogHeader>
+              <DialogTitle>新增季度</DialogTitle>
+            </DialogHeader>
+            <div className="py-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-700">
+                  季度ID
+                </label>
+                <Input
+                  placeholder="例如：2024Q4"
+                  value={newQuarterId}
+                  onChange={(e) => {
+                    setNewQuarterId(e.target.value.toUpperCase());
+                    setAddQuarterError("");
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !isAddingQuarter) {
+                      handleAddQuarter();
+                    }
+                  }}
+                />
+                <p className="text-xs text-slate-500">
+                  请使用 YYYYQ1-Q4 格式（如 2024Q1、2025Q2）
+                </p>
+                {addQuarterError && (
+                  <p className="text-xs text-red-500">{addQuarterError}</p>
+                )}
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setAddQuarterOpen(false)}
+                disabled={isAddingQuarter}
+              >
+                取消
+              </Button>
+              <Button
+                onClick={handleAddQuarter}
+                disabled={isAddingQuarter}
+              >
+                {isAddingQuarter ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    创建中...
+                  </>
+                ) : (
+                  "创建"
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </TooltipProvider>
   );
