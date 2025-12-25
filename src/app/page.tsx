@@ -41,6 +41,7 @@ import {
   Loader2,
   Check,
   Plus,
+  RefreshCw,
 } from "lucide-react";
 
 interface Quarter {
@@ -60,6 +61,7 @@ export default function Home() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showSaveSuccess, setShowSaveSuccess] = useState(false);
   const [showExportSuccess, setShowExportSuccess] = useState(false);
+  const [isReloading, setIsReloading] = useState(false);
 
   // Add quarter dialog state
   const [addQuarterOpen, setAddQuarterOpen] = useState(false);
@@ -160,30 +162,40 @@ export default function Home() {
     }
   };
 
+  // Fetch report function
+  const fetchReport = useCallback(async (quarterId: number, showLoading = true) => {
+    if (showLoading) setIsLoading(true);
+    try {
+      const response = await fetch(`/api/report?quarterId=${quarterId}`);
+      const data = await response.json();
+      if (data.report) {
+        setSlides(data.report);
+        setSourceCode(JSON.stringify(data.report, null, 2));
+      } else {
+        // No report for this quarter
+        setSlides([]);
+        setSourceCode("[]");
+      }
+    } catch (error) {
+      console.error("Failed to load report:", error);
+    } finally {
+      if (showLoading) setIsLoading(false);
+    }
+  }, []);
+
   // Load report when quarter changes
   useEffect(() => {
     if (selectedQuarter === null) return;
+    fetchReport(selectedQuarter);
+  }, [selectedQuarter, fetchReport]);
 
-    async function loadReport() {
-      try {
-        const response = await fetch(`/api/report?quarterId=${selectedQuarter}`);
-        const data = await response.json();
-        if (data.report) {
-          setSlides(data.report);
-          setSourceCode(JSON.stringify(data.report, null, 2));
-        } else {
-          // No report for this quarter
-          setSlides([]);
-          setSourceCode("[]");
-        }
-      } catch (error) {
-        console.error("Failed to load report:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-    loadReport();
-  }, [selectedQuarter]);
+  // Handle reload
+  const handleReload = async () => {
+    if (selectedQuarter === null) return;
+    setIsReloading(true);
+    await fetchReport(selectedQuarter, false); // Don't show full screen loader
+    setIsReloading(false);
+  };
 
   // Sync source code when slides change
   useEffect(() => {
@@ -399,6 +411,21 @@ export default function Home() {
                 <TooltipContent>新增季度</TooltipContent>
               </Tooltip>
             </div>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={handleReload}
+                  disabled={isReloading || selectedQuarter === null}
+                >
+                  <RefreshCw
+                    className={`h-4 w-4 ${isReloading ? "animate-spin" : ""}`}
+                  />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>重新加载当前季度内容</TooltipContent>
+            </Tooltip>
           </div>
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-2">
