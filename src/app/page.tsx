@@ -217,8 +217,8 @@ export default function Home() {
     }
   }, []);
 
-  // Publish report
-  const handlePublish = async () => {
+  // Save logic extracted for reusability
+  const saveToApi = async (slidesToSave: PPTReport) => {
     if (selectedQuarter === null) {
       alert("请先选择季度");
       return;
@@ -229,7 +229,7 @@ export default function Home() {
       const response = await fetch("/api/report", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ report: slides, quarterId: selectedQuarter }),
+        body: JSON.stringify({ report: slidesToSave, quarterId: selectedQuarter }),
       });
 
       if (!response.ok) {
@@ -244,6 +244,11 @@ export default function Home() {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  // Publish report
+  const handlePublish = async () => {
+    await saveToApi(slides);
   };
 
   // Export PDF
@@ -315,24 +320,28 @@ export default function Home() {
 
   // Save slide from modal
   const handleSaveSlide = (slide: SlideData) => {
+    let newSlides: PPTReport;
+
     if (editingIndex !== undefined) {
       // Editing existing slide
-      setSlides((prev) =>
-        prev.map((s, i) => (i === editingIndex ? slide : s))
-      );
+      newSlides = slides.map((s, i) => (i === editingIndex ? slide : s));
     } else if (insertIndex !== undefined) {
       // Insert at specific position
-      setSlides((prev) => [
-        ...prev.slice(0, insertIndex),
+      newSlides = [
+        ...slides.slice(0, insertIndex),
         slide,
-        ...prev.slice(insertIndex),
-      ]);
+        ...slides.slice(insertIndex),
+      ];
       setSelectedIndex(insertIndex);
     } else {
       // Add at end
-      setSlides((prev) => [...prev, slide]);
+      newSlides = [...slides, slide];
       setSelectedIndex(slides.length);
     }
+
+    setSlides(newSlides);
+    // Also trigger API save
+    saveToApi(newSlides);
   };
 
   // Fullscreen - open presenter and request fullscreen immediately
