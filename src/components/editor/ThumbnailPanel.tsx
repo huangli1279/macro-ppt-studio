@@ -254,6 +254,9 @@ export function ThumbnailPanel({
             >
               {slides.map((slide, index) => (
                 <div key={`slide-${index}`}>
+                  {index === 0 && (
+                    <InsertButton onClick={() => onAddSlide(0)} />
+                  )}
                   <SortableThumbnail
                     id={`slide-${index}`}
                     slide={slide}
