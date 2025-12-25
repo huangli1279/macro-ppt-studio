@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Minus, X } from "lucide-react";
+import { Plus, Minus, X, ArrowUpToLine } from "lucide-react";
 import { CodeEditor } from "./CodeEditor";
 import { SlideData, ChartConfig } from "@/types/slide";
 
@@ -121,6 +121,16 @@ export function SlideModal({
     }));
   };
 
+  const pinContentToTop = (index: number) => {
+    if (index === 0) return;
+    setFormData((prev) => {
+      const newContent = [...prev.content];
+      const [item] = newContent.splice(index, 1);
+      newContent.unshift(item);
+      return { ...prev, content: newContent };
+    });
+  };
+
   // Chart management
   const addChart = () => {
     if (formData.charts.length < 4) {
@@ -143,6 +153,22 @@ export function SlideModal({
       charts: prev.charts.filter((_, i) => i !== index),
     }));
     setChartDataStrings((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const pinChartToTop = (index: number) => {
+    if (index === 0) return;
+    setFormData((prev) => {
+      const newCharts = [...prev.charts];
+      const [chart] = newCharts.splice(index, 1);
+      newCharts.unshift(chart);
+      return { ...prev, charts: newCharts };
+    });
+    setChartDataStrings((prev) => {
+      const newStrings = [...prev];
+      const [str] = newStrings.splice(index, 1);
+      newStrings.unshift(str);
+      return newStrings;
+    });
   };
 
   const updateChartType = (index: number, type: ChartConfig["type"]) => {
@@ -272,6 +298,16 @@ export function SlideModal({
                         variant="ghost"
                         size="icon"
                         className="h-9 w-9 shrink-0"
+                        onClick={() => pinContentToTop(index)}
+                        disabled={index === 0}
+                        title="置顶"
+                      >
+                        <ArrowUpToLine className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-9 w-9 shrink-0"
                         onClick={() => removeContent(index)}
                       >
                         <Minus className="h-4 w-4" />
@@ -340,14 +376,26 @@ export function SlideModal({
                             </SelectContent>
                           </Select>
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7"
-                          onClick={() => removeChart(index)}
-                        >
-                          <Minus className="h-4 w-4" />
-                        </Button>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={() => pinChartToTop(index)}
+                            disabled={index === 0}
+                            title="置顶"
+                          >
+                            <ArrowUpToLine className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={() => removeChart(index)}
+                          >
+                            <Minus className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
                       <div>
                         <span className="text-sm text-slate-500 block mb-2">
