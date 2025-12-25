@@ -132,12 +132,20 @@ export function SlideRenderer({
           {/* Content row */}
           {contentCount > 0 && (
             <div className="flex gap-8">
-              <div className="flex-1">
-                {content[0] && <ContentItem text={content[0]} textSize={contentTextSize} />}
-              </div>
-              <div className="flex-1">
-                {content[1] && <ContentItem text={content[1]} textSize={contentTextSize} />}
-              </div>
+              {contentCount === 1 ? (
+                <div className="flex-1">
+                  {content[0] && <ContentItem text={content[0]} textSize={contentTextSize} />}
+                </div>
+              ) : (
+                <>
+                  <div className="flex-1">
+                    {content[0] && <ContentItem text={content[0]} textSize={contentTextSize} />}
+                  </div>
+                  <div className="flex-1">
+                    {content[1] && <ContentItem text={content[1]} textSize={contentTextSize} />}
+                  </div>
+                </>
+              )}
             </div>
           )}
           {/* Charts row */}
@@ -231,8 +239,7 @@ export function SlideRenderer({
         {/* Content section */}
         {contentCount > 0 && (
           <div
-            className={`grid gap-4 ${contentCount <= 2 ? "grid-cols-2" : "grid-cols-2"
-              }`}
+            className={`grid gap-4 ${contentCount === 1 ? "grid-cols-1" : "grid-cols-2"}`}
           >
             {content.map((text, index) => (
               <div key={index}>
