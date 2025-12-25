@@ -1,20 +1,34 @@
-import puppeteer from "puppeteer";
 import { PDFDocument } from "pdf-lib";
 import { PPTReport } from "@/types/slide";
+import puppeteerCore from "puppeteer-core";
+import chromium from "@sparticuz/chromium";
 
 export async function generatePDF(
   slides: PPTReport,
   baseUrl: string
 ): Promise<Buffer> {
-  const browser = await puppeteer.launch({
-    headless: true,
-    args: [
-      "--no-sandbox",
-      "--disable-setuid-sandbox",
-      "--disable-web-security",
-      "--allow-running-insecure-content",
-    ],
-  });
+  let browser;
+
+  if (process.env.NODE_ENV === "production") {
+    browser = await puppeteerCore.launch({
+      args: chromium.args,
+      defaultViewport: { width: 1920, height: 1080 },
+      executablePath: await chromium.executablePath(),
+      headless: true,
+    });
+  } else {
+    // Dynamic import for local dev to avoid bundling puppeteer in production
+    const { default: puppeteer } = await import("puppeteer");
+    browser = await puppeteer.launch({
+      headless: true,
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-web-security",
+        "--allow-running-insecure-content",
+      ],
+    });
+  }
 
   try {
     const page = await browser.newPage();
@@ -74,7 +88,9 @@ export async function generatePDF(
     const pdfBytes = await mergedPdf.save();
     return Buffer.from(pdfBytes);
   } finally {
-    await browser.close();
+    if (browser) {
+      await browser.close();
+    }
   }
 }
 
