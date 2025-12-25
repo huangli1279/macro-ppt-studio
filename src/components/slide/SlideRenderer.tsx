@@ -63,7 +63,7 @@ export function SlideRenderer({
   // Priority: isThumbnail > isFullscreen > normal
   const titleSize = isThumbnail ? "text-sm" : isFullscreen ? "text-3xl" : "text-xl";
   const contentTextSize = isThumbnail ? "text-xs" : isFullscreen ? "text-2xl" : "text-xs";
-  const padding = isThumbnail ? "p-2" : "p-6";
+  const padding = isThumbnail ? "p-2" : isFullscreen ? "pt-6 px-6 pb-14" : "p-6";
   const gap = isThumbnail ? "gap-1" : "gap-4";
   const titleMargin = isThumbnail ? "mb-2" : isFullscreen ? "mb-8" : "mb-5";
   const contentChartGap = isThumbnail ? "gap-2" : "gap-12";
@@ -321,7 +321,7 @@ export function SlideRenderer({
 
         {/* Page number */}
         {pageNumber !== undefined && (
-          <div className={`absolute ${isThumbnail ? "bottom-1 right-2 text-xs" : "bottom-3 right-4 text-sm"}`} style={{ color: '#1a4f99' }}>
+          <div className={`absolute ${isThumbnail ? "bottom-1 right-2 text-xs" : isFullscreen ? "bottom-4 right-6 text-xl" : "bottom-3 right-4 text-sm"}`} style={{ color: '#1a4f99' }}>
             {pageNumber}
           </div>
         )}
