@@ -14,7 +14,7 @@ const nextConfig: NextConfig = {
     ],
   },
   // Ensure puppeteer works in API routes
-  serverExternalPackages: ["puppeteer"],
+  serverExternalPackages: ["puppeteer", "puppeteer-core", "@sparticuz/chromium"],
 };
 
 export default nextConfig;
