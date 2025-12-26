@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Send, Loader2, X, Bot, User, Globe } from "lucide-react";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { PPTReport } from "@/types/slide";
 import { getSlideContext } from "@/lib/ai-context";
 
@@ -215,7 +216,7 @@ export function ChatBox({ open, onOpenChange, slides, currentSlideIndex }: ChatB
                                 >
                                     {msg.role === "assistant" ? (
                                         <div className="prose prose-sm prose-slate max-w-none [&>p]:my-1 [&>ul]:my-1 [&>ol]:my-1 break-words">
-                                            <ReactMarkdown>{msg.content || "..."}</ReactMarkdown>
+                                            <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content || "..."}</ReactMarkdown>
                                         </div>
                                     ) : (
                                         <p className="text-sm whitespace-pre-wrap break-words">{msg.content}</p>
