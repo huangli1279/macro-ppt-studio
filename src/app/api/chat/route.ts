@@ -169,7 +169,9 @@ function buildSystemPrompt(context: string, useWebSearch: boolean = false): stri
     // Append web search instruction if enabled
     if (useWebSearch) {
         prompt += `\n\n## 联网搜索强制开启
-用户已开启"联网搜索"模式。对于用户的每一个问题，你**必须**使用 search_web 工具进行搜索，以确保回答包含最新的互联网信息。即使问题看起来可以通过常识回答，也请进行搜索以获取最新背景。`;
+用户已开启"联网搜索"模式。对于用户的每一个问题，你**必须**使用 search_web 工具进行搜索，以确保回答包含最新的互联网信息。即使问题看起来可以通过常识回答，也请进行搜索以获取最新背景。
+
+在调用工具之前，**严禁**输出任何解释性文字（如"我将为您搜索..."）。请直接调用 search_web 工具。`;
     }
 
     return prompt;
