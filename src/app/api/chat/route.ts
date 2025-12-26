@@ -42,7 +42,7 @@ const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
         type: "function",
         function: {
             name: "search_web",
-            description: "搜索互联网获取最新的实时信息。当用户询问宏观经济数据、新闻、天气或其他需要最新数据的问题时，必须使用此工具。",
+            description: "搜索互联网获取最新的实时信息。当用户询问宏观经济数据、新闻或其他需要最新数据的问题时，必须使用此工具。请优先搜索政府、官方机构、权威组织发布的内容。",
             parameters: {
                 type: "object",
                 properties: {
@@ -174,6 +174,16 @@ function buildSystemPrompt(context: string, useWebSearch: boolean = false): stri
     if (useWebSearch) {
         prompt += `\n\n## 联网搜索强制开启
 用户已开启"联网搜索"模式。对于用户的每一个问题，你**必须**使用 search_web 工具进行搜索，以确保回答包含最新的互联网信息。即使问题看起来可以通过常识回答，也请进行搜索以获取最新背景。
+
+### 搜索来源偏好
+在使用 search_web 时，请优先寻找并引用以下高质量来源发布的内容：
+- 政府部门（如统计局、财政部、央行等）
+- 国际组织（如IMF、世界银行、OECD等）
+- 知名金融机构（如主要商业银行、投行研究部）
+- 官方媒体和权威新闻机构
+- 知名智库和研究机构
+
+尽量避免引用非专业自媒体、个人博客或未经验证的论坛帖子。
 
 在调用工具之前，**严禁**输出任何解释性文字（如"我将为您搜索..."）。请直接调用 search_web 工具。`;
     }
