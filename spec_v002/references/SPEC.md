@@ -17,7 +17,7 @@
     - **Message List**: 聊天记录区域，支持滚动。
         - **User Message**: 右侧气泡。
         - **AI Message**: 左侧气泡，支持 Markdown 渲染。
-        - **Loading State**: AI 思考时的加载动画。
+        - **Loading State**: AI 思考时、调用工具时的加载动画。
     - **Input Area**: 底部输入框 (Textarea) + 发送按钮。
 
 ## 3. 功能需求 (Functional Requirements)
