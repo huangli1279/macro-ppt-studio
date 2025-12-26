@@ -618,11 +618,57 @@ function HomeContent() {
 
         {/* Fullscreen Presenter */}
         {/* AI Chat Modal */}
+        {/* Fullscreen Presenter */}
+        {/* AI Chat Modal */}
         <ChatBox
           open={chatOpen}
           onOpenChange={setChatOpen}
           slides={slides}
           currentSlideIndex={selectedIndex}
+          isReadOnly={isReadOnly}
+          onAddSlide={async (slide) => {
+            // Reusing handleSaveSlide logic but adapting for AI arg structure
+            // The AI gives { title, content, type }. We need to form a SlideData.
+            // Defaulting charts to empty array for now as AI adding charts is complex, 
+            // but we can support basic structure.
+            const newSlide: SlideData = {
+              title: slide.title,
+              content: slide.content || [],
+              charts: []
+            };
+            // Add to end or after current? Let's add after current for better context? 
+            // Or append to end. AI prompt says "add a new slide". Usually append is safer unless specified.
+            // Let's reuse the logic: insert after current index
+            const newSlides = [
+              ...slides.slice(0, selectedIndex + 1),
+              newSlide,
+              ...slides.slice(selectedIndex + 1),
+            ];
+            setSlides(newSlides);
+            setSelectedIndex(selectedIndex + 1);
+            await saveToApi(newSlides);
+          }}
+          onUpdateSlide={async (data) => {
+            const current = slides[selectedIndex];
+            if (!current) return;
+
+            const updatedSlide = { ...current };
+            if (data.title) updatedSlide.title = data.title;
+            if (data.content) updatedSlide.content = data.content;
+
+            const newSlides = slides.map((s, i) => i === selectedIndex ? updatedSlide : s);
+            setSlides(newSlides);
+            await saveToApi(newSlides);
+          }}
+          onDeleteSlide={async () => {
+            const newSlides = slides.filter((_, i) => i !== selectedIndex);
+            setSlides(newSlides);
+            // Adjust selection
+            if (selectedIndex >= newSlides.length) {
+              setSelectedIndex(Math.max(0, newSlides.length - 1));
+            }
+            await saveToApi(newSlides);
+          }}
         />
 
         {isFullscreen && (

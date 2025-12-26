@@ -35,7 +35,7 @@ const SYSTEM_PROMPT_TEMPLATE = `你是一位专业的宏观经济分析专家，
 // Initialize Tavily client
 const tavilyClient = tavily({ apiKey: process.env.TAVILY_API_KEY || "" });
 
-// Tool definition for web search
+// Tool definition for web search and slide management
 const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
     {
         type: "function",
@@ -54,9 +54,66 @@ const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
             },
         },
     },
+    {
+        type: "function",
+        function: {
+            name: "add_slide",
+            description: "在当前演示文稿中添加一张新幻灯片。当用户明确要求添加幻灯片时使用。",
+            parameters: {
+                type: "object",
+                properties: {
+                    title: {
+                        type: "string",
+                        description: "幻灯片标题",
+                    },
+                    content: {
+                        type: "array",
+                        items: { type: "string" },
+                        description: "幻灯片正文内容要点（文本数组）",
+                    },
+                    type: {
+                        type: "string",
+                        enum: ["content_only", "two_charts", "four_charts"],
+                        description: "幻灯片布局类型（仅用于提示，实际由内容决定）",
+                    }
+                },
+                required: ["title", "content"],
+            },
+        },
+    },
+    {
+        type: "function",
+        function: {
+            name: "update_slide",
+            description: "更新当前（正在查看的）幻灯片的内容。当用户要求修改当前幻灯片时使用。",
+            parameters: {
+                type: "object",
+                properties: {
+                    title: {
+                        type: "string",
+                        description: "新的标题（如果不修改则不传）",
+                    },
+                    content: {
+                        type: "array",
+                        items: { type: "string" },
+                        description: "新的正文内容要点（将完全替换现有内容，如果不修改则不传）",
+                    },
+                },
+            },
+        },
+    },
+    {
+        type: "function",
+        function: {
+            name: "delete_slide",
+            description: "删除当前（正在查看的）幻灯片。当用户要求删除当前幻灯片时使用。",
+            parameters: {
+                type: "object",
+                properties: {},
+            },
+        },
+    },
 ];
-
-
 
 // Execute Tavily search
 async function executeSearch(query: string): Promise<string> {
@@ -94,9 +151,20 @@ function buildSystemPrompt(context: string): string {
         minute: "2-digit",
     });
 
-    return SYSTEM_PROMPT_TEMPLATE
+    const isEditMode = context.includes("Edit Mode"); // Simple check or pass explicitly
+
+    let prompt = SYSTEM_PROMPT_TEMPLATE
         .replace("{{CURRENT_TIME}}", timeStr)
         .replace("{{CONTEXT}}", context);
+
+    // Append editing capabilities if applicable
+    prompt += `\n\n## 幻灯片编辑能力
+你具备直接编辑幻灯片的能力。当用户明确要求添加、修改或删除幻灯片时，**请直接调用相应的工具** (add_slide, update_slide, delete_slide)，而不需要告诉用户你怎么做。
+- 添加幻灯片：调用 add_slide
+- 修改当前幻灯片：调用 update_slide
+- 删除当前幻灯片：调用 delete_slide`;
+
+    return prompt;
 }
 
 export async function POST(request: NextRequest) {
@@ -177,71 +245,97 @@ export async function POST(request: NextRequest) {
                         }
                     }
 
-                    // If there are tool calls, execute them
-                    if (currentToolCalls.length > 0 && currentToolCalls[0]?.id) {
-                        // Notify client about tool call
-                        controller.enqueue(
-                            encoder.encode(`data: ${JSON.stringify({ type: "tool_call", tool: currentToolCalls[0].name })}\n\n`)
-                        );
+                    // If there are tool calls, categorize them
+                    if (currentToolCalls.length > 0) {
+                        const clientSideTools = ["add_slide", "update_slide", "delete_slide"];
+                        const serverSideToolCalls = currentToolCalls.filter(tc => !clientSideTools.includes(tc.name));
+                        const clientToolCalls = currentToolCalls.filter(tc => clientSideTools.includes(tc.name));
 
-                        // Prepare tool results
-                        const toolResults: OpenAI.Chat.Completions.ChatCompletionToolMessageParam[] = [];
-
-                        for (const toolCall of currentToolCalls) {
-                            if (toolCall.name === "search_web") {
-                                try {
-                                    const args = JSON.parse(toolCall.arguments);
-                                    const searchResult = await executeSearch(args.query);
-                                    toolResults.push({
-                                        role: "tool",
-                                        tool_call_id: toolCall.id,
-                                        content: searchResult,
-                                    });
-                                } catch (e) {
-                                    toolResults.push({
-                                        role: "tool",
-                                        tool_call_id: toolCall.id,
-                                        content: "工具调用失败",
-                                    });
-                                }
+                        // 1. Handle Client-side tools (Send to client and STOP)
+                        if (clientToolCalls.length > 0) {
+                            // We construct a specific event for the client to handle
+                            for (const tc of clientToolCalls) {
+                                controller.enqueue(
+                                    encoder.encode(`data: ${JSON.stringify({
+                                        type: "client_tool_call",
+                                        tool: tc.name, // add_slide, update_slide, delete_slide
+                                        arguments: tc.arguments
+                                    })}\n\n`)
+                                );
                             }
+                            // We stop here for client tools. The client will handle the UI update.
+                            // We do NOT recurse for client tools in this design to keep it simple.
+                            controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+                            controller.close();
+                            return;
                         }
 
-                        // Notify tool result
-                        controller.enqueue(
-                            encoder.encode(`data: ${JSON.stringify({ type: "tool_result" })}\n\n`)
-                        );
+                        // 2. Handle Server-side tools (Execute and Recurse)
+                        if (serverSideToolCalls.length > 0) {
+                            // Notify client about tool call (visual feedback only)
+                            controller.enqueue(
+                                encoder.encode(`data: ${JSON.stringify({ type: "tool_call", tool: serverSideToolCalls[0].name })}\n\n`)
+                            );
 
-                        // Make second API call with tool results
-                        const secondMessages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
-                            ...chatMessages,
-                            {
-                                role: "assistant",
-                                content: fullContent || null,
-                                tool_calls: currentToolCalls.map(tc => ({
-                                    id: tc.id,
-                                    type: "function" as const,
-                                    function: {
-                                        name: tc.name,
-                                        arguments: tc.arguments,
-                                    },
-                                })),
-                            },
-                            ...toolResults,
-                        ];
+                            // Prepare tool results
+                            const toolResults: OpenAI.Chat.Completions.ChatCompletionToolMessageParam[] = [];
 
-                        const secondResponse = await openai.chat.completions.create({
-                            model: process.env.OPENAI_MODEL || "gpt-4o-mini",
-                            messages: secondMessages,
-                            stream: true,
-                        });
+                            for (const toolCall of serverSideToolCalls) {
+                                if (toolCall.name === "search_web") {
+                                    try {
+                                        const args = JSON.parse(toolCall.arguments);
+                                        const searchResult = await executeSearch(args.query);
+                                        toolResults.push({
+                                            role: "tool",
+                                            tool_call_id: toolCall.id,
+                                            content: searchResult,
+                                        });
+                                    } catch (e) {
+                                        toolResults.push({
+                                            role: "tool",
+                                            tool_call_id: toolCall.id,
+                                            content: "工具调用失败",
+                                        });
+                                    }
+                                }
+                            }
 
-                        for await (const chunk of secondResponse) {
-                            const delta = chunk.choices[0]?.delta;
-                            if (delta?.content) {
-                                controller.enqueue(
-                                    encoder.encode(`data: ${JSON.stringify({ type: "content", content: delta.content })}\n\n`)
-                                );
+                            // Notify tool result
+                            controller.enqueue(
+                                encoder.encode(`data: ${JSON.stringify({ type: "tool_result" })}\n\n`)
+                            );
+
+                            // Make second API call with tool results
+                            const secondMessages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
+                                ...chatMessages,
+                                {
+                                    role: "assistant",
+                                    content: fullContent || null,
+                                    tool_calls: serverSideToolCalls.map(tc => ({
+                                        id: tc.id,
+                                        type: "function" as const,
+                                        function: {
+                                            name: tc.name,
+                                            arguments: tc.arguments,
+                                        },
+                                    })),
+                                },
+                                ...toolResults,
+                            ];
+
+                            const secondResponse = await openai.chat.completions.create({
+                                model: process.env.OPENAI_MODEL || "gpt-4o-mini",
+                                messages: secondMessages,
+                                stream: true,
+                            });
+
+                            for await (const chunk of secondResponse) {
+                                const delta = chunk.choices[0]?.delta;
+                                if (delta?.content) {
+                                    controller.enqueue(
+                                        encoder.encode(`data: ${JSON.stringify({ type: "content", content: delta.content })}\n\n`)
+                                    );
+                                }
                             }
                         }
                     }
