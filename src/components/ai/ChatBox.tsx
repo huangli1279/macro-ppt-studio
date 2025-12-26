@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Switch } from "@/components/ui/switch";
 import { Send, Loader2, X, Bot, User, Globe, RotateCcw } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -53,6 +54,7 @@ export function ChatBox({
     const [input, setInput] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [toolStatus, setToolStatus] = useState<ToolStatus>({ isActive: false });
+    const [isWebSearchEnabled, setIsWebSearchEnabled] = useState(false);
     const scrollAreaRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -236,6 +238,7 @@ export function ChatBox({
                 body: JSON.stringify({
                     messages: messageHistory,
                     context: fullContext,
+                    useWebSearch: isWebSearchEnabled,
                 }),
             });
 
@@ -359,7 +362,7 @@ export function ChatBox({
             setIsLoading(false);
             setToolStatus({ isActive: false });
         }
-    }, [input, isLoading, messages, slides, currentSlideIndex, isReadOnly, hasPendingTool, onAddSlide, onUpdateSlide, onDeleteSlide]);
+    }, [input, isLoading, messages, slides, currentSlideIndex, isReadOnly, hasPendingTool, onAddSlide, onUpdateSlide, onDeleteSlide, isWebSearchEnabled]);
 
     const handleConfirmTool = async (index: number) => {
         const msg = messages[index];
@@ -608,16 +611,34 @@ export function ChatBox({
                 {/* Input Area */}
                 <div className="px-6 py-4 border-t border-slate-200 shrink-0 relative">
                     <div className="flex items-end gap-2">
-                        <Textarea
-                            ref={textareaRef}
-                            value={input}
-                            onChange={(e) => setInput(e.target.value)}
-                            onKeyDown={handleKeyDown}
-                            placeholder="输入你的问题..."
-                            className="resize-none min-h-[44px] max-h-[120px]"
-                            rows={1}
-                            disabled={isLoading || hasPendingTool}
-                        />
+                        {/* Wrapper for Textarea + Search Button */}
+                        <div className="relative flex-1">
+                            <Textarea
+                                ref={textareaRef}
+                                value={input}
+                                onChange={(e) => setInput(e.target.value)}
+                                onKeyDown={handleKeyDown}
+                                placeholder="输入你的问题..."
+                                className="resize-none min-h-[44px] max-h-[120px] pr-24"
+                                rows={1}
+                                disabled={isLoading || hasPendingTool}
+                            />
+
+                            {/* Web Search Button (Inside Input, Bottom Right) */}
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setIsWebSearchEnabled(!isWebSearchEnabled)}
+                                className={`absolute bottom-2 right-2 h-7 rounded-full text-xs transition-colors border ${isWebSearchEnabled
+                                    ? "bg-blue-100 text-blue-600 border-blue-200 hover:bg-blue-200 hover:text-blue-700"
+                                    : "bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200 hover:text-slate-600"
+                                    }`}
+                            >
+                                <Globe className={`h-3 w-3 mr-1.5 ${isWebSearchEnabled ? "animate-pulse" : ""}`} />
+                                {isWebSearchEnabled ? "联网搜索" : "联网搜索"}
+                            </Button>
+                        </div>
+
                         <Button
                             size="icon"
                             onClick={handleSend}

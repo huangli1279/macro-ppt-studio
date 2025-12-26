@@ -141,7 +141,7 @@ async function executeSearch(query: string): Promise<string> {
 }
 
 // Build system prompt with context and time
-function buildSystemPrompt(context: string): string {
+function buildSystemPrompt(context: string, useWebSearch: boolean = false): string {
     const now = new Date();
     const timeStr = now.toLocaleString("zh-CN", {
         timeZone: "Asia/Shanghai",
@@ -153,7 +153,7 @@ function buildSystemPrompt(context: string): string {
         minute: "2-digit",
     });
 
-    const isEditMode = context.includes("Edit Mode"); // Simple check or pass explicitly
+    // const isEditMode = context.includes("Edit Mode"); // Simple check or pass explicitly
 
     let prompt = SYSTEM_PROMPT_TEMPLATE
         .replace("{{CURRENT_TIME}}", timeStr)
@@ -166,12 +166,18 @@ function buildSystemPrompt(context: string): string {
 - 修改当前幻灯片：调用 update_slide
 - 删除当前幻灯片：调用 delete_slide`;
 
+    // Append web search instruction if enabled
+    if (useWebSearch) {
+        prompt += `\n\n## 联网搜索强制开启
+用户已开启"联网搜索"模式。对于用户的每一个问题，你**必须**使用 search_web 工具进行搜索，以确保回答包含最新的互联网信息。即使问题看起来可以通过常识回答，也请进行搜索以获取最新背景。`;
+    }
+
     return prompt;
 }
 
 export async function POST(request: NextRequest) {
     try {
-        const { messages, context } = await request.json();
+        const { messages, context, useWebSearch } = await request.json();
 
         if (!messages || !Array.isArray(messages)) {
             return new Response(JSON.stringify({ error: "Invalid messages" }), {
@@ -183,7 +189,7 @@ export async function POST(request: NextRequest) {
         // Build messages array with system prompt
         const systemMessage: OpenAI.Chat.Completions.ChatCompletionMessageParam = {
             role: "system",
-            content: buildSystemPrompt(context || ""),
+            content: buildSystemPrompt(context || "", useWebSearch),
         };
 
         const chatMessages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
@@ -194,6 +200,14 @@ export async function POST(request: NextRequest) {
             })),
         ];
 
+        // Filter tools based on useWebSearch preference
+        let availableTools = tools;
+        if (useWebSearch === false) {
+            // Remove search_web tool if functionality is disabled
+            // We ensure we check type === 'function' to satisfy TS union narrowing
+            availableTools = tools.filter(t => t.type === 'function' && t.function.name !== "search_web");
+        }
+
         // Create streaming response
         const encoder = new TextEncoder();
         const stream = new ReadableStream({
@@ -203,7 +217,7 @@ export async function POST(request: NextRequest) {
                     let response = await openai.chat.completions.create({
                         model: process.env.OPENAI_MODEL || "gpt-4o-mini",
                         messages: chatMessages,
-                        tools,
+                        tools: availableTools.length > 0 ? availableTools : undefined,
                         tool_choice: "auto",
                         stream: true,
                     });
@@ -328,6 +342,7 @@ export async function POST(request: NextRequest) {
                             const secondResponse = await openai.chat.completions.create({
                                 model: process.env.OPENAI_MODEL || "gpt-4o-mini",
                                 messages: secondMessages,
+                                tools: availableTools.length > 0 ? availableTools : undefined,
                                 stream: true,
                             });
 
