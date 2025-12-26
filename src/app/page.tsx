@@ -32,6 +32,7 @@ import {
   CodeEditor,
 } from "@/components/editor";
 import { FullscreenPresenter } from "@/components/presentation/FullscreenPresenter";
+import { ChatBox } from "@/components/ai/ChatBox";
 import { PPTReport, SlideData } from "@/types/slide";
 import {
   Save,
@@ -44,6 +45,7 @@ import {
   Plus,
   RefreshCw,
   Edit,
+  Sparkles,
 } from "lucide-react";
 
 interface Quarter {
@@ -84,6 +86,9 @@ function HomeContent() {
   const [editingSlide, setEditingSlide] = useState<SlideData | undefined>();
   const [editingIndex, setEditingIndex] = useState<number | undefined>();
   const [insertIndex, setInsertIndex] = useState<number | undefined>();
+
+  // AI Chat modal state
+  const [chatOpen, setChatOpen] = useState(false);
 
   // Ref for preview container to handle wheel events
   const previewContainerRef = useRef<HTMLDivElement>(null);
@@ -545,6 +550,19 @@ function HomeContent() {
               </TooltipTrigger>
               <TooltipContent>全屏演示</TooltipContent>
             </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setChatOpen(true)}
+                >
+                  <Sparkles className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>AI 宏观经济分析专家</TooltipContent>
+            </Tooltip>
           </div>
         </header>
 
@@ -599,6 +617,14 @@ function HomeContent() {
         />
 
         {/* Fullscreen Presenter */}
+        {/* AI Chat Modal */}
+        <ChatBox
+          open={chatOpen}
+          onOpenChange={setChatOpen}
+          slides={slides}
+          currentSlideIndex={selectedIndex}
+        />
+
         {isFullscreen && (
           <FullscreenPresenter
             slides={slides}
