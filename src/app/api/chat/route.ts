@@ -31,7 +31,6 @@ const SYSTEM_PROMPT_TEMPLATE = `你是一位专业的宏观经济分析专家，
 - **积极搜索**：当用户询问"为什么"（Why）类问题，或者询问需要实时信息的问题时，**必须**优先调用 search_web 工具，获取更广阔的背景信息来辅助回答。
 - **时间感知**：在使用 search_web 工具时，**必须**在查询词中携带当前的年份和月份（例如"2025年12月"），以确保搜索结果的时效性，避免使用过时的数据。
 - 引用幻灯片内容时，注明是来自哪张幻灯片
-- **引用来源**：当使用 search_web 工具获取信息时，**必须**在回答的最后列出参考来源 URL。
 - 使用 Markdown 格式化回答`;
 
 // Initialize Tavily client
@@ -118,7 +117,7 @@ const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
 ];
 
 // Execute Tavily search
-async function executeSearch(query: string): Promise<string> {
+async function executeSearch(query: string): Promise<{ context: string; sources: { title: string; url: string }[] }> {
     try {
         const response = await tavilyClient.search(query, {
             maxResults: 5,
@@ -126,17 +125,22 @@ async function executeSearch(query: string): Promise<string> {
         });
 
         if (!response.results || response.results.length === 0) {
-            return "没有找到相关结果。";
+            return { context: "没有找到相关结果。", sources: [] };
         }
 
         const results = response.results.map((r, i) =>
             `${i + 1}. ${r.title}\n   ${r.content}\n   来源: ${r.url}`
         ).join("\n\n");
 
-        return `搜索结果:\n\n${results}`;
+        const sources = response.results.map(r => ({ title: r.title, url: r.url }));
+
+        return {
+            context: `搜索结果:\n\n${results}`,
+            sources
+        };
     } catch (error) {
         console.error("Tavily search error:", error);
-        return "搜索失败，请稍后重试。";
+        return { context: "搜索失败，请稍后重试。", sources: [] };
     }
 }
 
@@ -297,16 +301,20 @@ export async function POST(request: NextRequest) {
 
                             // Prepare tool results
                             const toolResults: OpenAI.Chat.Completions.ChatCompletionToolMessageParam[] = [];
+                            const collectedSources: { title: string; url: string }[] = [];
 
                             for (const toolCall of serverSideToolCalls) {
                                 if (toolCall.name === "search_web") {
                                     try {
                                         const args = JSON.parse(toolCall.arguments);
                                         const searchResult = await executeSearch(args.query);
+
+                                        collectedSources.push(...searchResult.sources);
+
                                         toolResults.push({
                                             role: "tool",
                                             tool_call_id: toolCall.id,
-                                            content: searchResult,
+                                            content: searchResult.context,
                                         });
                                     } catch (e) {
                                         toolResults.push({
@@ -355,6 +363,21 @@ export async function POST(request: NextRequest) {
                                         encoder.encode(`data: ${JSON.stringify({ type: "content", content: delta.content })}\n\n`)
                                     );
                                 }
+                            }
+
+                            // Append collected sources if any
+                            if (collectedSources.length > 0) {
+                                // Deduplicate sources by URL
+                                const uniqueSources = Array.from(new Map(collectedSources.map(s => [s.url, s])).values());
+
+                                let sourcesText = "\n\n**参考来源:**\n";
+                                uniqueSources.forEach((source, index) => {
+                                    sourcesText += `${index + 1}. [${source.title}](${source.url})\n`;
+                                });
+
+                                controller.enqueue(
+                                    encoder.encode(`data: ${JSON.stringify({ type: "content", content: sourcesText })}\n\n`)
+                                );
                             }
                         }
                     }
