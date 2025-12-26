@@ -401,7 +401,9 @@ function HomeContent() {
               <span className="mr-2">📑</span>
               宏观经济分析报告Studio
             </h1>
-            <div className="flex items-center gap-2">
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 mr-2 border-r border-slate-200 pr-4">
               {quarters.length > 0 && (
                 <Select
                   value={selectedQuarter?.toString()}
@@ -437,24 +439,24 @@ function HomeContent() {
                 </TooltipTrigger>
                 <TooltipContent>新增季度</TooltipContent>
               </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={handleReload}
+                    disabled={isReloading || selectedQuarter === null}
+                  >
+                    <RefreshCw
+                      className={`h-4 w-4 ${isReloading ? "animate-spin" : ""}`}
+                    />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>重新加载当前季度内容</TooltipContent>
+              </Tooltip>
             </div>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={handleReload}
-                  disabled={isReloading || selectedQuarter === null}
-                >
-                  <RefreshCw
-                    className={`h-4 w-4 ${isReloading ? "animate-spin" : ""}`}
-                  />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>重新加载当前季度内容</TooltipContent>
-            </Tooltip>
-          </div>
-          <div className="flex items-center gap-2">
+
             <div className="flex items-center gap-2">
               {!isReadOnly && (
                 <Tooltip
