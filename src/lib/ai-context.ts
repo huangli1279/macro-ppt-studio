@@ -97,8 +97,9 @@ export function getSlideContext(currentIndex: number, slides: PPTReport): string
     }
 
     // Calculate range: current ± 2 slides
-    const startIndex = Math.max(0, currentIndex - 2);
-    const endIndex = Math.min(slides.length - 1, currentIndex + 2);
+    // Use all slides
+    const startIndex = 0;
+    const endIndex = slides.length - 1;
 
     const parts: string[] = [];
     parts.push("# 当前幻灯片上下文\n");

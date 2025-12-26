@@ -394,7 +394,7 @@ function HomeContent() {
         <header className="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-4 shrink-0">
           <div className="flex items-center gap-4">
             <h1 className="text-lg font-semibold text-slate-800">
-              <span className="mr-2">✍️</span>
+              <span className="mr-2">📑</span>
               宏观经济分析报告Studio
             </h1>
             <div className="flex items-center gap-2">
