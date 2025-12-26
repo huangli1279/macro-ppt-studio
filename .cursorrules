@@ -1,0 +1,217 @@
+# Cursor Rules for Macro PPT Studio
+
+## Project Overview
+This is a Next.js 16 application (App Router) for creating and managing PPT presentations with visual configuration and source code editing capabilities. The project uses TypeScript, React 19, Tailwind CSS v4, Drizzle ORM, and Supabase.
+
+## Technology Stack
+- **Framework**: Next.js 16.1.0 (App Router)
+- **Language**: TypeScript (strict mode)
+- **UI Library**: React 19.2.3
+- **Styling**: Tailwind CSS v4 + shadcn/ui components
+- **Database**: Drizzle ORM + Supabase (PostgreSQL)
+- **Code Editor**: Monaco Editor (@monaco-editor/react)
+- **Charts**: ECharts (echarts-for-react)
+- **PDF Export**: Puppeteer
+- **Drag & Drop**: @dnd-kit
+- **Icons**: lucide-react
+
+## Code Style & Conventions
+
+### TypeScript
+- Use strict TypeScript with proper type definitions
+- Always define interfaces/types for component props
+- Use type guards for runtime type checking (see `src/types/slide.ts` for examples)
+- Prefer `interface` for object shapes, `type` for unions/intersections
+- Use `Record<string, unknown>` for flexible object types when needed
+
+### React Components
+- Use functional components with hooks
+- Mark client components with `"use client"` directive at the top
+- Use `Suspense` for async components when needed
+- Prefer `useCallback` and `useMemo` for performance optimization
+- Use `useState` for local state, avoid prop drilling
+- Extract reusable logic into custom hooks when appropriate
+
+### File Organization
+- Components: `src/components/` organized by feature (editor, slide, presentation, ui)
+- Types: `src/types/` - centralized type definitions
+- Utilities: `src/lib/` - shared utilities and helpers
+- API Routes: `src/app/api/` - Next.js API route handlers
+- Pages: `src/app/` - Next.js App Router pages
+
+### Path Aliases
+- Use `@/*` to reference `src/*` (configured in tsconfig.json)
+- Example: `import { Button } from "@/components/ui/button"`
+
+### Component Patterns
+- Export components from `index.ts` files for cleaner imports
+- Use shadcn/ui components from `@/components/ui/`
+- Follow the existing component structure:
+  - Props interface defined above component
+  - Default values/constants defined before component
+  - Component function with proper typing
+  - Return JSX with proper Tailwind classes
+
+### Styling
+- Use Tailwind CSS utility classes exclusively
+- Use `cn()` utility from `@/lib/utils` for conditional classes
+- Follow existing color scheme: slate for grays, maintain consistency
+- Use responsive classes when needed
+- Prefer composition over custom CSS
+
+### API Routes
+- Use Next.js App Router API routes (`route.ts` files)
+- Handle errors gracefully with try-catch
+- Return proper HTTP status codes
+- Use TypeScript for request/response types
+- Example structure:
+  ```typescript
+  export async function GET(request: Request) {
+    try {
+      // implementation
+      return Response.json({ data });
+    } catch (error) {
+      return Response.json({ error: "message" }, { status: 500 });
+    }
+  }
+  ```
+
+### Database
+- Use Drizzle ORM for all database operations
+- Schema definitions in `src/lib/db/schema.ts`
+- Database connection in `src/lib/db/index.ts`
+- Use migrations: `npm run db:generate` and `npm run db:push`
+- Always handle database errors appropriately
+
+### State Management
+- Use React hooks (`useState`, `useEffect`, `useCallback`) for local state
+- Fetch data in `useEffect` with proper cleanup
+- Use `useCallback` for event handlers passed to child components
+- Sync state carefully (e.g., source code ↔ slides)
+
+### Error Handling
+- Use try-catch blocks for async operations
+- Display user-friendly error messages
+- Log errors to console for debugging
+- Show loading states during async operations
+- Use disabled states on buttons during operations
+
+### UI/UX Patterns
+- Use Tooltip components for icon buttons
+- Show loading spinners (Loader2 from lucide-react) during async operations
+- Display success feedback (e.g., "保存成功") temporarily
+- Use Dialog components for modals
+- Implement proper keyboard navigation where applicable
+- Handle edge cases (empty states, loading states, error states)
+
+### Code Editor Integration
+- Use Monaco Editor for JSON editing
+- Validate JSON before applying changes
+- Show error messages for invalid JSON
+- Sync between source code and preview mode
+
+### Chart Integration
+- Support three chart types: table, echarts, image
+- Use ECharts configuration objects for echarts type
+- Handle chart data validation
+- Support styled table cells (see `StyledCellValue` type)
+
+### PDF Export
+- Use Puppeteer for server-side PDF generation
+- Handle PDF generation errors gracefully
+- Provide download functionality for generated PDFs
+
+## Best Practices
+
+### Performance
+- Use `useCallback` for functions passed as props
+- Use `useMemo` for expensive computations
+- Avoid unnecessary re-renders
+- Lazy load heavy components when possible
+
+### Accessibility
+- Use semantic HTML elements
+- Provide proper ARIA labels when needed
+- Ensure keyboard navigation works
+- Maintain proper focus management
+
+### Code Quality
+- Keep components focused and single-purpose
+- Extract reusable logic into utilities
+- Use meaningful variable and function names
+- Add comments for complex logic
+- Follow existing code patterns in the codebase
+
+### Testing Considerations
+- Write testable components (pure functions where possible)
+- Keep business logic separate from UI
+- Use proper TypeScript types for better IDE support
+
+## Common Patterns
+
+### Fetching Data
+```typescript
+const fetchData = useCallback(async () => {
+  setIsLoading(true);
+  try {
+    const response = await fetch("/api/endpoint");
+    const data = await response.json();
+    setData(data);
+  } catch (error) {
+    console.error("Error:", error);
+  } finally {
+    setIsLoading(false);
+  }
+}, []);
+```
+
+### Form Handling
+- Use controlled components with `useState`
+- Validate input before submission
+- Show error messages inline
+- Disable submit button during processing
+
+### Modal/Dialog Pattern
+- Use Dialog component from shadcn/ui
+- Manage open/close state with `useState`
+- Pass data via props
+- Call onSave callback with validated data
+
+## Naming Conventions
+- Components: PascalCase (e.g., `SlideModal.tsx`)
+- Files: PascalCase for components, camelCase for utilities
+- Functions: camelCase
+- Constants: UPPER_SNAKE_CASE or camelCase depending on context
+- Types/Interfaces: PascalCase
+
+## Environment Variables
+- Use `.env` for local development
+- Document required env vars in `docs/ENV-GUIDE.md`
+- Use `DATABASE_URL` for Supabase connection
+- Check for `NEXT_PUBLIC_*` prefix for client-side variables
+
+## Git & Version Control
+- Follow existing commit message patterns
+- Keep commits focused and atomic
+- Document breaking changes
+
+## When Adding New Features
+1. Check existing patterns in similar components
+2. Follow the established file structure
+3. Use existing UI components from shadcn/ui
+4. Add proper TypeScript types
+5. Handle loading and error states
+6. Test in both preview and source modes (if applicable)
+7. Ensure responsive design works
+
+## Code Review Checklist
+- [ ] TypeScript types are properly defined
+- [ ] Client components have "use client" directive
+- [ ] Error handling is implemented
+- [ ] Loading states are shown
+- [ ] Tailwind classes are used (no custom CSS)
+- [ ] Components are properly exported
+- [ ] Path aliases (@/*) are used correctly
+- [ ] Code follows existing patterns
+- [ ] No console.logs in production code (use console.error for errors)
+
