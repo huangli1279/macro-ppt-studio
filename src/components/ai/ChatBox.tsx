@@ -182,7 +182,7 @@ export function ChatBox({ open, onOpenChange, slides, currentSlideIndex }: ChatB
                 <DialogHeader className="px-6 py-4 border-b border-slate-200 shrink-0 flex flex-row items-center justify-between space-y-0">
                     <DialogTitle className="flex items-center gap-2">
                         <Bot className="h-5 w-5 text-blue-600" />
-                        AI 宏观经济分析专家
+                        AI 宏观经济分析助手
                     </DialogTitle>
                     <div className="flex items-center gap-1">
                         <Button
@@ -215,7 +215,7 @@ export function ChatBox({ open, onOpenChange, slides, currentSlideIndex }: ChatB
                             <div className="text-center text-slate-500 py-8">
                                 <Bot className="h-12 w-12 mx-auto mb-4 text-slate-300" />
                                 <p className="text-sm">
-                                    你好！我是 AI 宏观经济分析专家。
+                                    你好！我是 AI 宏观经济分析助手。
                                     <br />
                                     我可以帮助你分析当前幻灯片的内容，或搜索最新的宏观经济数据。
                                 </p>

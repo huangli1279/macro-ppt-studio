@@ -395,7 +395,7 @@ function HomeContent() {
           <div className="flex items-center gap-4">
             <h1 className="text-lg font-semibold text-slate-800">
               <span className="mr-2">✍️</span>
-              个金宏观经济报告Studio
+              宏观经济分析报告Studio
             </h1>
             <div className="flex items-center gap-2">
               {quarters.length > 0 && (

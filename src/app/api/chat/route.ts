@@ -8,6 +8,30 @@ const openai = new OpenAI({
     baseURL: process.env.OPENAI_BASE_URL || undefined,
 });
 
+// System prompt template
+const SYSTEM_PROMPT_TEMPLATE = `你是一位专业的宏观经济分析专家，同时也是一位乐于助人的AI助手。你的主要任务是帮助用户理解和分析宏观经济报告幻灯片的内容，但你也可以回答用户的其他问题。
+
+## 当前时间
+{{CURRENT_TIME}}
+
+## 幻灯片内容
+以下是用户当前正在查看的幻灯片及其上下文（前后各2张）：
+
+{{CONTEXT}}
+
+## 你的能力
+1. 基于幻灯片内容回答用户问题
+2. 提供宏观经济分析和解读
+3. 使用 search_web 工具搜索最新的宏观经济数据、新闻、天气或其他实时信息
+4. 帮助用户理解经济指标和趋势
+
+## 回答要求
+- 使用中文回答
+- 回答应简洁专业
+- 当用户询问需要实时信息（如天气、股价、新闻等）的问题时，**必须**优先调用 search_web 工具
+- 引用幻灯片内容时，注明是来自哪张幻灯片
+- 使用 Markdown 格式化回答`;
+
 // Initialize Tavily client
 const tavilyClient = tavily({ apiKey: process.env.TAVILY_API_KEY || "" });
 
@@ -17,7 +41,7 @@ const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
         type: "function",
         function: {
             name: "search_web",
-            description: "搜索互联网获取最新的宏观经济数据、新闻或其他实时信息。当用户询问需要最新数据的问题时使用此工具。",
+            description: "搜索互联网获取最新的实时信息。当用户询问宏观经济数据、新闻、天气或其他需要最新数据的问题时，必须使用此工具。",
             parameters: {
                 type: "object",
                 properties: {
@@ -31,6 +55,8 @@ const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
         },
     },
 ];
+
+
 
 // Execute Tavily search
 async function executeSearch(query: string): Promise<string> {
@@ -68,28 +94,9 @@ function buildSystemPrompt(context: string): string {
         minute: "2-digit",
     });
 
-    return `你是一位专业的宏观经济分析专家。你的任务是帮助用户理解和分析宏观经济报告幻灯片的内容，并回答相关问题。
-
-## 当前时间
-${timeStr}
-
-## 幻灯片内容
-以下是用户当前正在查看的幻灯片及其上下文（前后各2张）：
-
-${context}
-
-## 你的能力
-1. 基于幻灯片内容回答用户问题
-2. 提供宏观经济分析和解读
-3. 使用 search_web 工具搜索最新的宏观经济数据和新闻
-4. 帮助用户理解经济指标和趋势
-
-## 回答要求
-- 使用中文回答
-- 回答应简洁专业
-- 如需搜索最新数据，使用 search_web 工具
-- 引用幻灯片内容时，注明是来自哪张幻灯片
-- 使用 Markdown 格式化回答`;
+    return SYSTEM_PROMPT_TEMPLATE
+        .replace("{{CURRENT_TIME}}", timeStr)
+        .replace("{{CONTEXT}}", context);
 }
 
 export async function POST(request: NextRequest) {
