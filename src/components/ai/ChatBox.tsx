@@ -177,8 +177,8 @@ export function ChatBox({ open, onOpenChange, slides, currentSlideIndex }: ChatB
                 </DialogHeader>
 
                 {/* Message List */}
-                <ScrollArea ref={scrollAreaRef} className="flex-1 px-6">
-                    <div className="py-4 space-y-4">
+                <ScrollArea ref={scrollAreaRef} className="flex-1 min-h-0">
+                    <div className="px-6 py-4 space-y-4">
                         {messages.length === 0 && (
                             <div className="text-center text-slate-500 py-8">
                                 <Bot className="h-12 w-12 mx-auto mb-4 text-slate-300" />
@@ -197,8 +197,8 @@ export function ChatBox({ open, onOpenChange, slides, currentSlideIndex }: ChatB
                             >
                                 <div
                                     className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${msg.role === "user"
-                                            ? "bg-blue-600 text-white"
-                                            : "bg-slate-200 text-slate-600"
+                                        ? "bg-blue-600 text-white"
+                                        : "bg-slate-200 text-slate-600"
                                         }`}
                                 >
                                     {msg.role === "user" ? (
@@ -208,17 +208,17 @@ export function ChatBox({ open, onOpenChange, slides, currentSlideIndex }: ChatB
                                     )}
                                 </div>
                                 <div
-                                    className={`max-w-[80%] rounded-lg px-4 py-2 ${msg.role === "user"
-                                            ? "bg-blue-600 text-white"
-                                            : "bg-slate-100 text-slate-800"
+                                    className={`max-w-[80%] rounded-lg px-4 py-2 overflow-hidden ${msg.role === "user"
+                                        ? "bg-blue-600 text-white"
+                                        : "bg-slate-100 text-slate-800"
                                         }`}
                                 >
                                     {msg.role === "assistant" ? (
-                                        <div className="prose prose-sm prose-slate max-w-none [&>p]:my-1 [&>ul]:my-1 [&>ol]:my-1">
+                                        <div className="prose prose-sm prose-slate max-w-none [&>p]:my-1 [&>ul]:my-1 [&>ol]:my-1 break-words">
                                             <ReactMarkdown>{msg.content || "..."}</ReactMarkdown>
                                         </div>
                                     ) : (
-                                        <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                                        <p className="text-sm whitespace-pre-wrap break-words">{msg.content}</p>
                                     )}
                                 </div>
                             </div>
