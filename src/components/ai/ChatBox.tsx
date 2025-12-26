@@ -56,6 +56,22 @@ export function ChatBox({
     const scrollAreaRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+    // -- Drag & Resize State --
+    const [position, setPosition] = useState({ x: 0, y: 0 });
+    const [size, setSize] = useState({ width: 800, height: 600 });
+
+    // Refs for mutable state during drag/resize (avoids re-renders)
+    const interactionRef = useRef({
+        isDragging: false,
+        isResizing: false,
+        startX: 0,
+        startY: 0,
+        startPos: { x: 0, y: 0 },
+        startSize: { w: 0, h: 0 },
+    });
+
+    const dialogRef = useRef<HTMLDivElement>(null);
+
     // Derived state for pending tool
     const hasPendingTool = messages.some(m => m.toolRequest?.status === 'pending');
 
@@ -66,8 +82,110 @@ export function ChatBox({
             setInput("");
             setIsLoading(false);
             setToolStatus({ isActive: false });
+            // Reset position/size or keep previous?
+            // Keeping previous is better UX, but if closed, maybe reset?
+            // Let's NOT reset position/size to allow "remembering" during session.
+            // If completely unmounted, it will reset anyway.
         }
     }, [open]);
+
+    // -- Drag & Resize Handlers --
+    // -- Drag & Resize Handlers --
+    useEffect(() => {
+        const handleMouseMove = (e: MouseEvent) => {
+            if (!dialogRef.current) return;
+            const state = interactionRef.current;
+
+            if (state.isDragging) {
+                const dx = e.clientX - state.startX;
+                const dy = e.clientY - state.startY;
+
+                // Directly update DOM
+                const newX = state.startPos.x + dx;
+                const newY = state.startPos.y + dy;
+                dialogRef.current.style.translate = `calc(-50% + ${newX}px) calc(-50% + ${newY}px)`;
+            } else if (state.isResizing) {
+                const dx = e.clientX - state.startX;
+                const dy = e.clientY - state.startY;
+
+                // Directly update DOM
+                const newWidth = Math.max(400, state.startSize.w + dx);
+                const newHeight = Math.max(300, state.startSize.h + dy);
+                dialogRef.current.style.width = `${newWidth}px`;
+                dialogRef.current.style.height = `${newHeight}px`;
+            }
+        };
+
+        const handleMouseUp = (e: MouseEvent) => {
+            const state = interactionRef.current;
+            if (!state.isDragging && !state.isResizing) return;
+
+            // Sync final state to React
+            if (state.isDragging) {
+                const dx = e.clientX - state.startX;
+                const dy = e.clientY - state.startY;
+                setPosition({ x: state.startPos.x + dx, y: state.startPos.y + dy });
+                state.isDragging = false;
+            } else if (state.isResizing) {
+                const dx = e.clientX - state.startX;
+                const dy = e.clientY - state.startY;
+                setSize({
+                    width: Math.max(400, state.startSize.w + dx),
+                    height: Math.max(300, state.startSize.h + dy)
+                });
+                state.isResizing = false;
+            }
+
+            document.body.style.userSelect = '';
+        };
+
+        if (open) {
+            window.addEventListener('mousemove', handleMouseMove);
+            window.addEventListener('mouseup', handleMouseUp);
+            // Capture ref if not set
+            const el = document.getElementById('chat-box-content') as HTMLDivElement;
+            if (el) dialogRef.current = el;
+        }
+        return () => {
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', handleMouseUp);
+        };
+    }, [open]);
+
+    const onHeaderMouseDown = (e: React.MouseEvent) => {
+        if ((e.target as HTMLElement).closest('button')) return;
+
+        const el = document.getElementById('chat-box-content') as HTMLDivElement;
+        if (el) dialogRef.current = el;
+
+        interactionRef.current = {
+            isDragging: true,
+            isResizing: false,
+            startX: e.clientX,
+            startY: e.clientY,
+            startPos: { ...position },
+            startSize: { w: size.width, h: size.height },
+        };
+        document.body.style.userSelect = 'none';
+    };
+
+    const onResizeMouseDown = (e: React.MouseEvent) => {
+        e.stopPropagation();
+
+        const el = document.getElementById('chat-box-content') as HTMLDivElement;
+        if (el) dialogRef.current = el;
+
+        interactionRef.current = {
+            isDragging: false,
+            isResizing: true,
+            startX: e.clientX,
+            startY: e.clientY,
+            startPos: { ...position },
+            startSize: { w: size.width, h: size.height }
+        };
+        document.body.style.userSelect = 'none';
+    };
+
 
     // Auto scroll to bottom when new messages arrive
     useEffect(() => {
@@ -325,9 +443,23 @@ export function ChatBox({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent showCloseButton={false} className="sm:max-w-[800px] h-[80vh] max-h-[700px] flex flex-col p-0">
-                <DialogHeader className="px-6 py-4 border-b border-slate-200 shrink-0 flex flex-row items-center justify-between space-y-0">
-                    <DialogTitle className="flex items-center gap-2">
+            <DialogContent
+                id="chat-box-content"
+                showCloseButton={false}
+                className="p-0 flex flex-col shadow-xl border border-slate-200"
+                style={{
+                    translate: `calc(-50% + ${position.x}px) calc(-50% + ${position.y}px)`,
+                    width: `${size.width}px`,
+                    height: `${size.height}px`,
+                    maxHeight: 'none', // Override default max-height
+                    maxWidth: 'none',   // Override default max-width for free sizing
+                }}
+            >
+                <DialogHeader
+                    className="px-6 py-4 border-b border-slate-200 shrink-0 flex flex-row items-center justify-between space-y-0 cursor-move"
+                    onMouseDown={onHeaderMouseDown}
+                >
+                    <DialogTitle className="flex items-center gap-2 select-none">
                         <Bot className="h-5 w-5 text-blue-600" />
                         AI 宏观经济分析助手
                     </DialogTitle>
@@ -339,6 +471,7 @@ export function ChatBox({
                             disabled={isLoading}
                             title="重置会话"
                             className="h-8 w-8 hover:bg-slate-100"
+                            onMouseDown={(e) => e.stopPropagation()}
                         >
                             <RotateCcw className={`h-4 w-4 text-slate-500 ${isLoading ? 'opacity-50' : ''}`} />
                         </Button>
@@ -348,6 +481,7 @@ export function ChatBox({
                                 size="icon"
                                 title="关闭"
                                 className="h-8 w-8 hover:bg-slate-100"
+                                onMouseDown={(e) => e.stopPropagation()}
                             >
                                 <X className="h-4 w-4 text-slate-500" />
                             </Button>
@@ -359,7 +493,7 @@ export function ChatBox({
                 <ScrollArea ref={scrollAreaRef} className="flex-1 min-h-0">
                     <div className="px-6 py-4 space-y-4">
                         {messages.length === 0 && (
-                            <div className="text-center text-slate-500 py-8">
+                            <div className="text-center text-slate-500 py-8 select-none">
                                 <Bot className="h-12 w-12 mx-auto mb-4 text-slate-300" />
                                 <p className="text-sm">
                                     你好！我是 AI 宏观经济分析助手。
@@ -472,7 +606,7 @@ export function ChatBox({
                 </ScrollArea>
 
                 {/* Input Area */}
-                <div className="px-6 py-4 border-t border-slate-200 shrink-0">
+                <div className="px-6 py-4 border-t border-slate-200 shrink-0 relative">
                     <div className="flex items-end gap-2">
                         <Textarea
                             ref={textareaRef}
@@ -496,6 +630,16 @@ export function ChatBox({
                                 <Send className="h-4 w-4" />
                             )}
                         </Button>
+                    </div>
+
+                    {/* Resize Handle */}
+                    <div
+                        className="absolute bottom-1 right-1 w-4 h-4 cursor-se-resize flex items-center justify-center opacity-50 hover:opacity-100"
+                        onMouseDown={onResizeMouseDown}
+                    >
+                        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M10 10L10 0L0 10L10 10Z" fill="#94a3b8" />
+                        </svg>
                     </div>
                 </div>
             </DialogContent>
