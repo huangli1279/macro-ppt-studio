@@ -178,7 +178,7 @@ export function ChatBox({ open, onOpenChange, slides, currentSlideIndex }: ChatB
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent showCloseButton={false} className="sm:max-w-[600px] h-[80vh] max-h-[700px] flex flex-col p-0">
+            <DialogContent showCloseButton={false} className="sm:max-w-[800px] h-[80vh] max-h-[700px] flex flex-col p-0">
                 <DialogHeader className="px-6 py-4 border-b border-slate-200 shrink-0 flex flex-row items-center justify-between space-y-0">
                     <DialogTitle className="flex items-center gap-2">
                         <Bot className="h-5 w-5 text-blue-600" />
@@ -284,7 +284,7 @@ export function ChatBox({ open, onOpenChange, slides, currentSlideIndex }: ChatB
 
                 {/* Input Area */}
                 <div className="px-6 py-4 border-t border-slate-200 shrink-0">
-                    <div className="flex gap-2">
+                    <div className="flex items-end gap-2">
                         <Textarea
                             ref={textareaRef}
                             value={input}
@@ -299,7 +299,7 @@ export function ChatBox({ open, onOpenChange, slides, currentSlideIndex }: ChatB
                             size="icon"
                             onClick={handleSend}
                             disabled={!input.trim() || isLoading}
-                            className="shrink-0"
+                            className="shrink-0 h-[44px] w-[44px]"
                         >
                             {isLoading ? (
                                 <Loader2 className="h-4 w-4 animate-spin" />
