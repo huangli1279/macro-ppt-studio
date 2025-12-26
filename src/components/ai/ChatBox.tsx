@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Loader2, X, Bot, User, Globe } from "lucide-react";
+import { Send, Loader2, X, Bot, User, Globe, RotateCcw } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { PPTReport } from "@/types/slide";
@@ -167,14 +167,45 @@ export function ChatBox({ open, onOpenChange, slides, currentSlideIndex }: ChatB
         }
     };
 
+    const handleReset = useCallback(() => {
+        setMessages([]);
+        setInput("");
+        setIsLoading(false);
+        setToolStatus({ isActive: false });
+        // Optional: Focus input after reset
+        setTimeout(() => textareaRef.current?.focus(), 100);
+    }, []);
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[600px] h-[80vh] max-h-[700px] flex flex-col p-0">
-                <DialogHeader className="px-6 py-4 border-b border-slate-200 shrink-0">
+            <DialogContent showCloseButton={false} className="sm:max-w-[600px] h-[80vh] max-h-[700px] flex flex-col p-0">
+                <DialogHeader className="px-6 py-4 border-b border-slate-200 shrink-0 flex flex-row items-center justify-between space-y-0">
                     <DialogTitle className="flex items-center gap-2">
                         <Bot className="h-5 w-5 text-blue-600" />
                         AI 宏观经济分析专家
                     </DialogTitle>
+                    <div className="flex items-center gap-1">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={handleReset}
+                            disabled={isLoading}
+                            title="重置会话"
+                            className="h-8 w-8 hover:bg-slate-100"
+                        >
+                            <RotateCcw className={`h-4 w-4 text-slate-500 ${isLoading ? 'opacity-50' : ''}`} />
+                        </Button>
+                        <DialogClose asChild>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                title="关闭"
+                                className="h-8 w-8 hover:bg-slate-100"
+                            >
+                                <X className="h-4 w-4 text-slate-500" />
+                            </Button>
+                        </DialogClose>
+                    </div>
                 </DialogHeader>
 
                 {/* Message List */}
