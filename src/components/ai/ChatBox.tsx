@@ -253,8 +253,10 @@ export function ChatBox({
             const decoder = new TextDecoder();
             let assistantContent = "";
 
-            // Add empty assistant message to be updated
-            setMessages(prev => [...prev, { role: "assistant", content: "" }]);
+            // Add empty assistant message to be updated -> REMOVED
+            // setMessages(prev => [...prev, { role: "assistant", content: "" }]);
+
+            let messageCreated = false;
 
             while (true) {
                 const { done, value } = await reader.read();
@@ -283,16 +285,23 @@ export function ChatBox({
 
                                     if (isReadOnly) {
                                         assistantContent = "无法执行该操作（只读模式）。";
-                                        setMessages(prev => {
-                                            const newMessages = [...prev];
-                                            const lastMessage = newMessages[newMessages.length - 1];
-                                            if (lastMessage.role === "assistant") {
-                                                lastMessage.content = assistantContent;
-                                            }
-                                            return newMessages;
-                                        });
+
+                                        if (!messageCreated) {
+                                            setMessages(prev => [...prev, { role: "assistant", content: assistantContent }]);
+                                            messageCreated = true;
+                                        } else {
+                                            setMessages(prev => {
+                                                const newMessages = [...prev];
+                                                const lastMessage = newMessages[newMessages.length - 1];
+                                                if (lastMessage.role === "assistant") {
+                                                    lastMessage.content = assistantContent;
+                                                }
+                                                return newMessages;
+                                            });
+                                        }
                                     } else {
                                         // Add a new message for the tool request
+                                        // This always appends a new tool card message
                                         setMessages(prev => [...prev, {
                                             role: "assistant",
                                             content: "我需要确认您的操作：",
@@ -302,21 +311,52 @@ export function ChatBox({
                                                 status: 'pending'
                                             }
                                         }]);
+                                        // We consider a message created now (even if it's a specific tool one)
+                                        // though this logic path breaks the stream loop logically for client tools usually
+                                        messageCreated = true;
+
                                         setIsLoading(false); // Stop loading state while waiting for user
                                         setToolStatus({ isActive: false });
                                     }
                                 } catch (e) {
                                     console.error("Client tool parsing failed:", e);
                                     assistantContent = "解析操作请求时发生错误。";
-                                    setMessages(prev => {
-                                        const newMessages = [...prev];
-                                        const lastMessage = newMessages[newMessages.length - 1];
-                                        lastMessage.content = assistantContent;
-                                        return newMessages;
-                                    });
+                                    if (!messageCreated) {
+                                        setMessages(prev => [...prev, { role: "assistant", content: assistantContent }]);
+                                        messageCreated = true;
+                                    } else {
+                                        setMessages(prev => {
+                                            const newMessages = [...prev];
+                                            const lastMessage = newMessages[newMessages.length - 1];
+                                            lastMessage.content = assistantContent;
+                                            return newMessages;
+                                        });
+                                    }
                                 }
                             } else if (parsed.type === "content") {
                                 assistantContent += parsed.content;
+
+                                if (!messageCreated) {
+                                    setMessages(prev => [...prev, { role: "assistant", content: assistantContent }]);
+                                    messageCreated = true;
+                                } else {
+                                    setMessages(prev => {
+                                        const newMessages = [...prev];
+                                        const lastMessage = newMessages[newMessages.length - 1];
+                                        if (lastMessage.role === "assistant") {
+                                            lastMessage.content = assistantContent;
+                                        }
+                                        return newMessages;
+                                    });
+                                }
+                            }
+                        } catch {
+                            // Not JSON, might be raw text
+                            assistantContent += data;
+                            if (!messageCreated) {
+                                setMessages(prev => [...prev, { role: "assistant", content: assistantContent }]);
+                                messageCreated = true;
+                            } else {
                                 setMessages(prev => {
                                     const newMessages = [...prev];
                                     const lastMessage = newMessages[newMessages.length - 1];
@@ -326,17 +366,6 @@ export function ChatBox({
                                     return newMessages;
                                 });
                             }
-                        } catch {
-                            // Not JSON, might be raw text
-                            assistantContent += data;
-                            setMessages(prev => {
-                                const newMessages = [...prev];
-                                const lastMessage = newMessages[newMessages.length - 1];
-                                if (lastMessage.role === "assistant") {
-                                    lastMessage.content = assistantContent;
-                                }
-                                return newMessages;
-                            });
                         }
                     }
                 }
@@ -583,7 +612,7 @@ export function ChatBox({
                         ))}
 
                         {/* Loading / Tool Status */}
-                        {isLoading && (
+                        {isLoading && (toolStatus.isActive || messages.length === 0 || messages[messages.length - 1].role !== "assistant") && (
                             <div className="flex gap-3">
                                 <div className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-slate-200 text-slate-600">
                                     <Bot className="h-4 w-4" />
