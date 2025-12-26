@@ -561,7 +561,7 @@ function HomeContent() {
                   <Sparkles className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>AI 宏观经济分析专家</TooltipContent>
+              <TooltipContent>AI 宏观经济分析助手</TooltipContent>
             </Tooltip>
           </div>
         </header>
