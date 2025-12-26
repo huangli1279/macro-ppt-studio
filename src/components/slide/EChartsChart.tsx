@@ -25,46 +25,80 @@ export function EChartsChart({ data, className = "", isFullscreen = false }: ECh
     // Merge default grid settings to maximize chart space
     const option = data as echarts.EChartsOption;
 
-    // Calculate appropriate top margin based on title and legend presence
-    const hasTitle = option.title && (
-      (typeof option.title === 'object' && !Array.isArray(option.title) && option.title.text) ||
-      (Array.isArray(option.title) && option.title.length > 0)
-    );
-    const hasLegend = option.legend && (
-      (typeof option.legend === 'object' && !Array.isArray(option.legend)) ||
-      (Array.isArray(option.legend) && option.legend.length > 0)
-    );
-
     // Set font size based on fullscreen mode
     const fontSize = isFullscreen ? 16 : 8;
 
+    // Default Configuration
+    const defaultColor = [
+      "#D80C18",
+      "#1E53A4",
+      "#C1EBFF",
+      "#CADBF5",
+      "#FFC000",
+      "#DAF2D0",
+      "#AFABAB",
+    ];
+
+    const defaultTitle = {
+      left: "center",
+    };
+
+    const defaultLegend = {
+      top: "bottom",
+      left: "center",
+    };
+
+    const defaultTooltip = {
+      trigger: "axis",
+    };
+
+    // Helper to deeply merge simple objects (1-level deep for config objects)
+    const mergeConfig = (def: Record<string, any>, user: any) => {
+      if (!user) return { ...def };
+      if (typeof user !== "object" || Array.isArray(user)) return user;
+      return { ...def, ...user };
+    };
+
+    // Merge configurations
+    const mergedTitle = mergeConfig(defaultTitle, option.title);
+    const mergedLegend = mergeConfig(defaultLegend, option.legend);
+    const mergedTooltip = mergeConfig(defaultTooltip, option.tooltip);
+    const mergedColor = option.color || defaultColor;
+
     const mergedOption: echarts.EChartsOption = {
       ...option,
+      color: mergedColor,
       textStyle: {
         fontSize: fontSize,
         ...(option.textStyle as object || {}),
       },
-      title: option.title ? {
-        ...(typeof option.title === 'object' && !Array.isArray(option.title) ? option.title : {}),
-        textStyle: {
-          fontSize: isFullscreen ? 22 : 12,
-          ...((typeof option.title === 'object' && !Array.isArray(option.title) && option.title.textStyle) || {}),
+      title: Array.isArray(mergedTitle)
+        ? mergedTitle
+        : {
+          ...mergedTitle,
+          textStyle: {
+            fontSize: isFullscreen ? 22 : 12,
+            ...(mergedTitle.textStyle || {}),
+          },
         },
-      } : undefined,
-      legend: option.legend ? {
-        ...(typeof option.legend === 'object' && !Array.isArray(option.legend) ? option.legend : {}),
-        textStyle: {
-          fontSize: fontSize,
-          ...((typeof option.legend === 'object' && !Array.isArray(option.legend) && option.legend.textStyle) || {}),
+      legend: Array.isArray(mergedLegend)
+        ? mergedLegend
+        : {
+          ...mergedLegend,
+          textStyle: {
+            fontSize: fontSize,
+            ...(mergedLegend.textStyle || {}),
+          },
         },
-      } : undefined,
-      tooltip: {
-        ...(typeof option.tooltip === 'object' && !Array.isArray(option.tooltip) ? option.tooltip : {}),
-        textStyle: {
-          fontSize: isFullscreen ? 14 : 8,
-          ...((typeof option.tooltip === 'object' && !Array.isArray(option.tooltip) && (option.tooltip as Record<string, unknown>).textStyle) as object || {}),
+      tooltip: Array.isArray(mergedTooltip)
+        ? mergedTooltip
+        : {
+          ...mergedTooltip,
+          textStyle: {
+            fontSize: isFullscreen ? 14 : 8,
+            ...((mergedTooltip.textStyle as object) || {}),
+          },
         },
-      },
       grid: {
         left: isFullscreen ? 24 : 16,
         right: isFullscreen ? 24 : 16,
