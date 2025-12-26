@@ -295,6 +295,7 @@ export function ChatBox({
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === "Enter" && !e.shiftKey) {
+            if (e.nativeEvent.isComposing) return;
             e.preventDefault();
             handleSend();
         }
@@ -407,8 +408,8 @@ export function ChatBox({
                                     {/* Tool Request Card (if present) */}
                                     {msg.toolRequest && (
                                         <div className={`border rounded-lg px-4 py-3 shadow-sm w-full ${msg.toolRequest.status === 'pending'
-                                                ? 'bg-white border-blue-200'
-                                                : 'bg-slate-50 border-slate-200 opacity-80'
+                                            ? 'bg-white border-blue-200'
+                                            : 'bg-slate-50 border-slate-200 opacity-80'
                                             }`}>
                                             <p className={`text-sm font-medium mb-2 ${msg.toolRequest.status === 'pending' ? 'text-slate-800' : 'text-slate-500'
                                                 }`}>
