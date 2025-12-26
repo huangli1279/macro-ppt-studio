@@ -542,13 +542,12 @@ function HomeContent() {
                 <Button
                   variant="outline"
                   size="icon"
-                  onClick={handleFullscreen}
-                  disabled={slides.length === 0}
+                  onClick={() => setChatOpen(true)}
                 >
-                  <Maximize className="h-4 w-4" />
+                  <Sparkles className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>全屏演示</TooltipContent>
+              <TooltipContent>AI 宏观经济分析助手</TooltipContent>
             </Tooltip>
 
             <Tooltip>
@@ -556,12 +555,13 @@ function HomeContent() {
                 <Button
                   variant="outline"
                   size="icon"
-                  onClick={() => setChatOpen(true)}
+                  onClick={handleFullscreen}
+                  disabled={slides.length === 0}
                 >
-                  <Sparkles className="h-4 w-4" />
+                  <Maximize className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>AI 宏观经济分析助手</TooltipContent>
+              <TooltipContent>全屏演示</TooltipContent>
             </Tooltip>
           </div>
         </header>
