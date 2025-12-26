@@ -68,6 +68,7 @@ function HomeContent() {
   const [isExporting, setIsExporting] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showSaveSuccess, setShowSaveSuccess] = useState(false);
+  const [saveTooltipOpen, setSaveTooltipOpen] = useState(false);
   const [showExportSuccess, setShowExportSuccess] = useState(false);
   const [isReloading, setIsReloading] = useState(false);
 
@@ -248,7 +249,10 @@ function HomeContent() {
       }
 
       setShowSaveSuccess(true);
-      setTimeout(() => setShowSaveSuccess(false), 1000);
+      setTimeout(() => {
+        setShowSaveSuccess(false);
+        setSaveTooltipOpen(false);
+      }, 1000);
     } catch (error) {
       console.error("Failed to publish:", error);
       alert("保存失败，请重试或检查网络连接");
@@ -452,13 +456,14 @@ function HomeContent() {
           </div>
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-2">
-              {showSaveSuccess && (
-                <span className="text-sm text-slate-800 font-medium animate-in fade-in slide-in-from-right-2">
-                  保存成功
-                </span>
-              )}
               {!isReadOnly && (
-                <Tooltip>
+                <Tooltip
+                  open={saveTooltipOpen || showSaveSuccess}
+                  onOpenChange={(open) => {
+                    if (open && showSaveSuccess) return;
+                    setSaveTooltipOpen(open);
+                  }}
+                >
                   <TooltipTrigger asChild>
                     <Button
                       variant="outline"
@@ -473,7 +478,9 @@ function HomeContent() {
                       )}
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent>保存</TooltipContent>
+                  <TooltipContent side="bottom">
+                    {showSaveSuccess ? "保存成功" : "保存"}
+                  </TooltipContent>
                 </Tooltip>
               )}
             </div>
