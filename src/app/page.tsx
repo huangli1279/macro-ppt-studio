@@ -402,8 +402,8 @@ function HomeContent() {
               宏观经济分析报告Studio
             </h1>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-2 mr-2 border-r border-slate-200 pr-4">
+          <div className="flex items-center gap-0">
+            <div className="flex items-center gap-2 border-r border-slate-200 pr-4">
               {quarters.length > 0 && (
                 <Select
                   value={selectedQuarter?.toString()}
@@ -457,7 +457,7 @@ function HomeContent() {
               </Tooltip>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 pl-4">
               {!isReadOnly && (
                 <Tooltip
                   open={saveTooltipOpen || showSaveSuccess}
@@ -485,93 +485,93 @@ function HomeContent() {
                   </TooltipContent>
                 </Tooltip>
               )}
-            </div>
 
-            {process.env.NEXT_PUBLIC_ENABLE_PDF_EXPORT !== "false" && (
+              {process.env.NEXT_PUBLIC_ENABLE_PDF_EXPORT !== "false" && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={handleExportPDF}
+                      disabled={isExporting || slides.length === 0}
+                    >
+                      {isExporting ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : showExportSuccess ? (
+                        <Check className="h-4 w-4 text-slate-800" />
+                      ) : (
+                        <FileDown className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>导出PDF</TooltipContent>
+                </Tooltip>
+              )}
+
+              {!isReadOnly && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => handleEditSlide(selectedIndex)}
+                      disabled={slides.length === 0}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>编辑当前幻灯片</TooltipContent>
+                </Tooltip>
+              )}
+
+              {!isReadOnly && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={toggleViewMode}
+                    >
+                      {viewMode === "preview" ? (
+                        <Code className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {viewMode === "preview" ? "源码模式" : "预览模式"}
+                  </TooltipContent>
+                </Tooltip>
+              )}
+
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
                     variant="outline"
                     size="icon"
-                    onClick={handleExportPDF}
-                    disabled={isExporting || slides.length === 0}
+                    onClick={() => setChatOpen(true)}
                   >
-                    {isExporting ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : showExportSuccess ? (
-                      <Check className="h-4 w-4 text-slate-800" />
-                    ) : (
-                      <FileDown className="h-4 w-4" />
-                    )}
+                    <Sparkles className="h-4 w-4" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>导出PDF</TooltipContent>
+                <TooltipContent>AI 宏观经济分析助手</TooltipContent>
               </Tooltip>
-            )}
 
-            {!isReadOnly && (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
                     variant="outline"
                     size="icon"
-                    onClick={() => handleEditSlide(selectedIndex)}
+                    onClick={handleFullscreen}
                     disabled={slides.length === 0}
                   >
-                    <Edit className="h-4 w-4" />
+                    <Maximize className="h-4 w-4" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>编辑当前幻灯片</TooltipContent>
+                <TooltipContent>全屏演示</TooltipContent>
               </Tooltip>
-            )}
-
-            {!isReadOnly && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={toggleViewMode}
-                  >
-                    {viewMode === "preview" ? (
-                      <Code className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  {viewMode === "preview" ? "源码模式" : "预览模式"}
-                </TooltipContent>
-              </Tooltip>
-            )}
-
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setChatOpen(true)}
-                >
-                  <Sparkles className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>AI 宏观经济分析助手</TooltipContent>
-            </Tooltip>
-
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={handleFullscreen}
-                  disabled={slides.length === 0}
-                >
-                  <Maximize className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>全屏演示</TooltipContent>
-            </Tooltip>
+            </div>
           </div>
         </header>
 
