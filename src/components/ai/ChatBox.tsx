@@ -563,7 +563,16 @@ export function ChatBox({
                                         >
                                             {msg.role === "assistant" ? (
                                                 <div className="prose prose-sm prose-slate max-w-none [&>p]:my-1 [&>ul]:my-1 [&>ol]:my-1 break-words">
-                                                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
+                                                    <ReactMarkdown
+                                                        remarkPlugins={[remarkGfm]}
+                                                        components={{
+                                                            a: ({ node, ...props }) => (
+                                                                <a {...props} target="_blank" rel="noopener noreferrer" />
+                                                            )
+                                                        }}
+                                                    >
+                                                        {msg.content}
+                                                    </ReactMarkdown>
                                                 </div>
                                             ) : (
                                                 <p className="text-sm whitespace-pre-wrap break-words">{msg.content}</p>
