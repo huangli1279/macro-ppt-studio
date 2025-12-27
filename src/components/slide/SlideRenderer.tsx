@@ -76,6 +76,9 @@ export function SlideRenderer({
   const chartHGap = isThumbnail ? 'gap-2' : isFullscreen ? 'gap-12' : 'gap-8';
   const chartVGap = isThumbnail ? 'gap-1' : isFullscreen ? 'gap-10' : 'gap-6';
 
+  // Gap between content items (arguments)
+  const contentItemGap = isThumbnail ? "gap-1" : isFullscreen ? "gap-6" : "gap-2";
+
   // Padding for chart area container (left/right, bottom)
   const chartAreaPaddingX = isThumbnail ? 'px-1' : isFullscreen ? 'px-12' : 'px-8';
   const chartAreaPaddingBottom = isThumbnail ? 'pb-1' : isFullscreen ? 'pb-8' : 'pb-6';
@@ -98,7 +101,7 @@ export function SlideRenderer({
         <div className="flex-1 flex flex-col" style={{ gap: contentToChartGap }}>
           {/* Content row */}
           {contentCount > 0 && (
-            <div className="flex flex-col gap-4">
+            <div className={`flex flex-col ${contentItemGap}`}>
               {content.map((text, index) => (
                 <ContentItem key={index} text={text} textSize={contentTextSize} isFullscreen={isFullscreen} />
               ))}
@@ -120,7 +123,7 @@ export function SlideRenderer({
         <div className="flex-1 flex flex-col" style={{ gap: contentToChartGap }}>
           {/* Content row */}
           {contentCount > 0 && (
-            <div className="flex flex-col gap-4">
+            <div className={`flex flex-col ${contentItemGap}`}>
               {content.map((text, index) => (
                 <ContentItem key={index} text={text} textSize={contentTextSize} isFullscreen={isFullscreen} />
               ))}
@@ -145,7 +148,7 @@ export function SlideRenderer({
         <div className="flex-1 flex flex-col" style={{ gap: contentToChartGap }}>
           {/* Content row: 论点1+论点2 在左，论点3 在右 */}
           <div className="flex gap-4">
-            <div className="flex-1 flex flex-col gap-2">
+            <div className={`flex-1 flex flex-col ${contentItemGap}`}>
               <ContentItem text={content[0]} textSize={contentTextSize} isFullscreen={isFullscreen} />
               <ContentItem text={content[1]} textSize={contentTextSize} isFullscreen={isFullscreen} />
             </div>
@@ -179,11 +182,11 @@ export function SlideRenderer({
         <div className="flex-1 flex flex-col" style={{ gap: contentToChartGap }}>
           {/* Content row */}
           <div className="flex gap-8">
-            <div className="flex-1 flex flex-col gap-2">
+            <div className={`flex-1 flex flex-col ${contentItemGap}`}>
               <ContentItem text={content[0]} textSize={contentTextSize} isFullscreen={isFullscreen} />
               <ContentItem text={content[1]} textSize={contentTextSize} isFullscreen={isFullscreen} />
             </div>
-            <div className="flex-1 flex flex-col gap-2">
+            <div className={`flex-1 flex flex-col ${contentItemGap}`}>
               <ContentItem text={content[2]} textSize={contentTextSize} isFullscreen={isFullscreen} />
               <ContentItem text={content[3]} textSize={contentTextSize} isFullscreen={isFullscreen} />
             </div>
@@ -218,19 +221,19 @@ export function SlideRenderer({
         {contentCount > 0 && (
           <>
             {contentCount <= 2 ? (
-              <div className="flex flex-col gap-4">
+              <div className={`flex flex-col ${contentItemGap}`}>
                 {content.map((text, index) => (
                   <ContentItem key={index} text={text} textSize={contentTextSize} isFullscreen={isFullscreen} />
                 ))}
               </div>
             ) : (
               <div className="flex gap-4">
-                <div className="flex-1 flex flex-col gap-4">
+                <div className={`flex-1 flex flex-col ${contentItemGap}`}>
                   {content.slice(0, Math.ceil(contentCount / 2)).map((text, index) => (
                     <ContentItem key={index} text={text} textSize={contentTextSize} isFullscreen={isFullscreen} />
                   ))}
                 </div>
-                <div className="flex-1 flex flex-col gap-4">
+                <div className={`flex-1 flex flex-col ${contentItemGap}`}>
                   {content.slice(Math.ceil(contentCount / 2)).map((text, index) => (
                     <ContentItem key={index} text={text} textSize={contentTextSize} isFullscreen={isFullscreen} />
                   ))}
