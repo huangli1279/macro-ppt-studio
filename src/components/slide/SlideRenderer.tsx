@@ -66,7 +66,6 @@ export function SlideRenderer({
   const padding = isThumbnail ? "p-2" : isFullscreen ? "pt-12 px-12 pb-12" : "p-6";
   const gap = isThumbnail ? "gap-1" : "gap-4";
   const titleMargin = isThumbnail ? "mb-2" : isFullscreen ? "mb-8" : "mb-5";
-  const contentChartGap = isThumbnail ? "gap-2" : "gap-12";
 
   // Gap between content and charts
   // Use larger gap in fullscreen mode
@@ -77,7 +76,7 @@ export function SlideRenderer({
   const chartVGap = isThumbnail ? 'gap-1' : isFullscreen ? 'gap-10' : 'gap-6';
 
   // Gap between content items (arguments)
-  const contentItemGap = isThumbnail ? "gap-1" : isFullscreen ? "gap-6" : "gap-2";
+  const contentItemGap = isThumbnail ? "gap-1" : isFullscreen ? "gap-4" : "gap-2";
 
   // Padding for chart area container (left/right, bottom)
   const chartAreaPaddingX = isThumbnail ? 'px-1' : isFullscreen ? 'px-12' : 'px-8';
