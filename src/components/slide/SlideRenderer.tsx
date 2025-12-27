@@ -40,7 +40,7 @@ function ChartRenderer({ chart, isFullscreen = false }: { chart: ChartConfig; is
 // Content item component
 function ContentItem({ text, textSize, isFullscreen }: { text: string; textSize?: string; isFullscreen?: boolean }) {
   return (
-    <div className={`flex items-start gap-2 text-slate-700 ${textSize || ""}`} style={{ lineHeight: isFullscreen ? '1.5' : '1', marginBottom: '-8px' }}>
+    <div className={`flex items-start gap-2 text-slate-700 ${textSize || ""}`} style={{ lineHeight: isFullscreen ? '1.5' : '1.5' }}>
       <span className="text-slate-400 select-none">-</span>
       <span>{text}</span>
     </div>
@@ -145,7 +145,7 @@ export function SlideRenderer({
         <div className="flex-1 flex flex-col" style={{ gap: contentToChartGap }}>
           {/* Content row: 论点1+论点2 在左，论点3 在右 */}
           <div className="flex gap-4">
-            <div className="flex-1 flex flex-col gap-0">
+            <div className="flex-1 flex flex-col gap-2">
               <ContentItem text={content[0]} textSize={contentTextSize} isFullscreen={isFullscreen} />
               <ContentItem text={content[1]} textSize={contentTextSize} isFullscreen={isFullscreen} />
             </div>
@@ -179,11 +179,11 @@ export function SlideRenderer({
         <div className="flex-1 flex flex-col" style={{ gap: contentToChartGap }}>
           {/* Content row */}
           <div className="flex gap-8">
-            <div className="flex-1 flex flex-col gap-0">
+            <div className="flex-1 flex flex-col gap-2">
               <ContentItem text={content[0]} textSize={contentTextSize} isFullscreen={isFullscreen} />
               <ContentItem text={content[1]} textSize={contentTextSize} isFullscreen={isFullscreen} />
             </div>
-            <div className="flex-1 flex flex-col gap-0">
+            <div className="flex-1 flex flex-col gap-2">
               <ContentItem text={content[2]} textSize={contentTextSize} isFullscreen={isFullscreen} />
               <ContentItem text={content[3]} textSize={contentTextSize} isFullscreen={isFullscreen} />
             </div>
