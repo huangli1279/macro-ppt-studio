@@ -72,9 +72,20 @@ const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
                         items: { type: "string" },
                         description: "幻灯片正文内容要点（文本数组）",
                     },
+                    charts: {
+                        type: "array",
+                        items: {
+                            type: "object",
+                            properties: {
+                                type: { type: "string", enum: ["table", "echarts", "image"] },
+                                data: { type: "object" }
+                            },
+                            required: ["type", "data"]
+                        },
+                        description: "图表配置列表（符合 JSON 指南）",
+                    },
                     type: {
                         type: "string",
-                        enum: ["content_only", "two_charts", "four_charts"],
                         description: "幻灯片布局类型（仅用于提示，实际由内容决定）",
                     }
                 },
@@ -98,6 +109,18 @@ const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
                         type: "array",
                         items: { type: "string" },
                         description: "新的正文内容要点（将完全替换现有内容，如果不修改则不传）",
+                    },
+                    charts: {
+                        type: "array",
+                        items: {
+                            type: "object",
+                            properties: {
+                                type: { type: "string", enum: ["table", "echarts", "image"] },
+                                data: { type: "object" }
+                            },
+                            required: ["type", "data"]
+                        },
+                        description: "新的图表配置列表（将完全替换现有图表，如果不修改则不传）",
                     },
                 },
             },
@@ -168,7 +191,85 @@ function buildSystemPrompt(context: string, useWebSearch: boolean = false): stri
 你具备直接编辑幻灯片的能力。当用户明确要求添加、修改或删除幻灯片时，**请直接调用相应的工具** (add_slide, update_slide, delete_slide)，而不需要告诉用户你怎么做。
 - 添加幻灯片：调用 add_slide
 - 修改当前幻灯片：调用 update_slide
-- 删除当前幻灯片：调用 delete_slide`;
+- 删除当前幻灯片：调用 delete_slide
+
+## 幻灯片 JSON 数据规范
+为了正确地增删改幻灯片，特别是涉及复杂图表时，请严格参考以下 JSON 规范：
+
+### 1. 核心结构
+每个幻灯片由标题、论点（Content）和图表（Charts）三部分组成。
+- **title** (可选): 字符串
+- **content** (必填): 字符串数组 (最多 4 条)
+- **charts** (必填): 图表对象数组 (最多 4 个)
+**注意：content 和 charts 的数量均不能超过 4 个，否则会导致布局错误。**
+
+### 2. 自动化布局规则
+系统根据 content (论点数) 和 charts (图表数) 的数量自动选择最佳布局。
+推荐组合：
+- **2+1** (2论点+1图表)
+- **2+2** (2论点+2图表)
+- **3+3** (3论点+3图表)
+- **4+4** (4论点+4图表)
+
+### 3. 图表类型详解
+charts 数组中的每个对象必须包含 type 和 data 属性。
+
+#### 3.1 表格 (Table)
+type: "table"
+data: {
+  "title": "可选标题",
+  "data": {
+    "列名1": [值1, 值2],
+    "列名2": [值1, 值2]
+  }
+}
+单元格样式支持对象: { "value": "值", "color": "red", "font-weight": "bold" }
+
+#### 3.2 ECharts 图表 (ECharts)
+type: "echarts"
+data: ECharts 配置对象 (包含 title, xAxis, yAxis, series 等)
+系统会自动注入默认配色和字体，只需提供核心数据。
+
+#### 3.3 图片 (Image)
+type: "image"
+data: { "src": "URL" }
+
+### 5. 复杂实战示例 (重要参考)
+当用户提供的数据较多或需要复杂图表时，请参考此结构：
+
+\`\`\`json
+{
+  "title": "一线城市中，广深上海社零增速基本回升到全国平均水平，北京持续下行",
+  "content": [
+    "北京总部型经济特征明显，跨区域设立经营主体明显增加，导致部分单位在京实现的零售额受到一定影响",
+    "北京汽车类等大宗商品零售额下降18.3%，主要受燃油车牌获取难、成本高，燃油车市场需求不足影响"
+  ],
+  "charts": [
+    {
+      "type": "echarts",
+      "data": {
+        "title": { "text": "北上广深社会消费品零售总额累计同比(%)" },
+        "xAxis": { "type": "category", "data": ["2024-02", "2024-03", "..."] },
+        "yAxis": {},
+        "series": [
+          {
+            "name": "北京",
+            "type": "line",
+            "data": [2.6, -0.1, -0.2, { "value": -5.1, "label": { "show": true, "position": "right" } }]
+          }
+        ]
+      }
+    },
+    {
+      "type": "table",
+      "data": {
+        "日期": ["2502", "2503"],
+        "金银珠宝类": [29.2, 29]
+      }
+    }
+  ]
+}
+\`\`\``;
 
     // Append web search instruction if enabled
     if (useWebSearch) {

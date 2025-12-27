@@ -35,8 +35,8 @@ interface ChatBoxProps {
     slides: PPTReport;
     currentSlideIndex: number;
     isReadOnly?: boolean;
-    onAddSlide?: (slide: { title: string; content: string[] }) => Promise<void>;
-    onUpdateSlide?: (data: { title?: string; content?: string[] }) => Promise<void>;
+    onAddSlide?: (slide: { title: string; content: string[]; charts?: any[] }) => Promise<void>;
+    onUpdateSlide?: (data: { title?: string; content?: string[]; charts?: any[] }) => Promise<void>;
     onDeleteSlide?: () => Promise<void>;
 }
 
@@ -463,9 +463,9 @@ export function ChatBox({
     const getToolDescription = (tool: string, args: any) => {
         switch (tool) {
             case "add_slide":
-                return `添加新幻灯片，标题为 "${args.title}"`;
+                return `添加新幻灯片，标题为 "${args.title}"${args.charts ? `，包含 ${args.charts.length} 个图表` : ""}`;
             case "update_slide":
-                return `更新当前幻灯片${args.title ? `，标题为 "${args.title}"` : ""}`;
+                return `更新当前幻灯片${args.title ? `，标题为 "${args.title}"` : ""}${args.charts ? `，更新图表` : ""}`;
             case "delete_slide":
                 return `删除当前幻灯片`;
             default:

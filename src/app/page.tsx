@@ -657,7 +657,7 @@ function HomeContent() {
             const newSlide: SlideData = {
               title: slide.title,
               content: slide.content || [],
-              charts: []
+              charts: (slide.charts as any) || []
             };
             // Add to end or after current? Let's add after current for better context? 
             // Or append to end. AI prompt says "add a new slide". Usually append is safer unless specified.
@@ -678,6 +678,7 @@ function HomeContent() {
             const updatedSlide = { ...current };
             if (data.title) updatedSlide.title = data.title;
             if (data.content) updatedSlide.content = data.content;
+            if (data.charts) updatedSlide.charts = data.charts;
 
             const newSlides = slides.map((s, i) => i === selectedIndex ? updatedSlide : s);
             setSlides(newSlides);
