@@ -31,7 +31,7 @@ export function TableChart({ data, className = "", isFullscreen = false }: Table
             {columns.map((col) => (
               <th
                 key={col}
-                className="border border-slate-300 bg-slate-100 px-2 py-0.5 text-left font-semibold text-slate-700"
+                className="border border-slate-300 bg-slate-100 px-2 py-0.5 text-center font-semibold text-slate-700"
               >
                 {col}
               </th>
@@ -50,7 +50,7 @@ export function TableChart({ data, className = "", isFullscreen = false }: Table
                 return (
                   <td
                     key={col}
-                    className="border border-slate-200 px-2 py-0.5 text-slate-600"
+                    className="border border-slate-200 px-2 py-0.5 text-slate-600 text-center"
                     style={cellStyle}
                   >
                     {displayValue}
