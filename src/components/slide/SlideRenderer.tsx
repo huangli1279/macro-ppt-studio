@@ -70,7 +70,7 @@ export function SlideRenderer({
 
   // Gap between content and charts
   // Use larger gap in fullscreen mode
-  const contentToChartGap = isThumbnail ? '0.5rem' : isFullscreen ? '3rem' : '2rem';
+  const contentToChartGap = isThumbnail ? '0.5rem' : isFullscreen ? '3rem' : '1rem';
 
   // Gap between chart components (horizontal and vertical)
   const chartHGap = isThumbnail ? 'gap-2' : isFullscreen ? 'gap-12' : 'gap-8';
