@@ -21,6 +21,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Minus, X, ArrowUpToLine } from "lucide-react";
 import { CodeEditor } from "./CodeEditor";
 import { SlideData, ChartConfig } from "@/types/slide";
+import { cn } from "@/lib/utils";
+
+const BORDER_COLORS = [
+  "border-red-500",
+  "border-blue-500",
+  "border-orange-500",
+  "border-slate-400",
+];
 
 interface SlideModalProps {
   open: boolean;
@@ -286,13 +294,20 @@ export function SlideModal({
                     </Button>
                   </div>
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {formData.content.map((content, index) => (
-                    <div key={index} className="flex gap-2">
+                    <div
+                      key={index}
+                      className={cn(
+                        "flex gap-2 p-3 rounded-lg border-l-4 border",
+                        BORDER_COLORS[index % BORDER_COLORS.length]
+                      )}
+                    >
                       <Input
                         value={content}
                         onChange={(e) => updateContent(index, e.target.value)}
                         placeholder={`论点 ${index + 1}`}
+                        className="flex-1"
                       />
                       <Button
                         variant="ghost"
@@ -348,7 +363,10 @@ export function SlideModal({
                   {formData.charts.map((chart, index) => (
                     <div
                       key={index}
-                      className="border border-slate-200 rounded-lg p-4 space-y-3"
+                      className={cn(
+                        "rounded-lg p-4 space-y-3 border-l-4 border",
+                        BORDER_COLORS[index % BORDER_COLORS.length]
+                      )}
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
