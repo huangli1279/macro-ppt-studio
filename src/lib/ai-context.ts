@@ -1,4 +1,4 @@
-import { PPTReport, SlideData, ChartConfig, isTableData } from "@/types/slide";
+import { PPTReport, SlideData, ChartConfig, isTableData, isTableWithTitle, TableData } from "@/types/slide";
 
 /**
  * Extract text content from a single slide
@@ -38,9 +38,21 @@ function extractSlideText(slide: SlideData, slideIndex: number): string {
 function extractChartInfo(chart: ChartConfig, chartIndex: number): string {
     const parts: string[] = [];
 
-    if (chart.type === "table" && isTableData(chart.data)) {
-        const tableData = chart.data; // Store narrowed type
-        parts.push(`\n#### 表格 ${chartIndex + 1}:`);
+    if (chart.type === "table") {
+        let tableData: TableData;
+        let title: string | undefined;
+
+        if (isTableWithTitle(chart.data)) {
+            tableData = chart.data.data;
+            title = chart.data.title;
+        } else if (isTableData(chart.data)) {
+            tableData = chart.data;
+        } else {
+            // Invalid table data, skip
+            return "";
+        }
+
+        parts.push(`\n#### 表格 ${chartIndex + 1}:${title ? ` ${title}` : ""}`);
         const columns = Object.keys(tableData);
         parts.push(`列: ${columns.join(", ")}`);
 

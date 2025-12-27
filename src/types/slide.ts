@@ -13,6 +13,15 @@ export interface TableData {
   [columnName: string]: CellValue[];
 }
 
+// Table data with optional title
+export interface TableWithTitle {
+  title?: string;
+  data: TableData;
+}
+
+// Union type for table chart data
+export type TableChartData = TableData | TableWithTitle;
+
 // Image data
 export interface ImageData {
   src: string;
@@ -24,7 +33,7 @@ export type EChartsData = Record<string, unknown>;
 // Chart configuration
 export interface ChartConfig {
   type: "table" | "echarts" | "image";
-  data: TableData | EChartsData | ImageData;
+  data: TableChartData | EChartsData | ImageData;
 }
 
 // Single slide data
@@ -42,6 +51,16 @@ export function isTableData(data: unknown): data is TableData {
   if (typeof data !== "object" || data === null) return false;
   const obj = data as Record<string, unknown>;
   return Object.values(obj).every((val) => Array.isArray(val));
+}
+
+export function isTableWithTitle(data: unknown): data is TableWithTitle {
+  if (typeof data !== "object" || data === null) return false;
+  const obj = data as Record<string, unknown>;
+  return (
+    "data" in obj &&
+    isTableData(obj.data) &&
+    (obj.title === undefined || typeof obj.title === "string")
+  );
 }
 
 export function isImageData(data: unknown): data is ImageData {
