@@ -407,12 +407,29 @@ function HomeContent() {
               {quarters.length > 0 && (
                 <Select
                   value={selectedQuarter?.toString()}
-                  onValueChange={(value) => setSelectedQuarter(parseInt(value, 10))}
+                  onValueChange={(value) => {
+                    if (value === "NEW_QUARTER") {
+                      setAddQuarterError("");
+                      setNewQuarterId("");
+                      setAddQuarterOpen(true);
+                      // Don't change selectedQuarter
+                    } else {
+                      setSelectedQuarter(parseInt(value, 10));
+                    }
+                  }}
                 >
                   <SelectTrigger className="w-[140px]">
                     <SelectValue placeholder="选择季度" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent position="popper" align="end" sideOffset={5}>
+                    {!isReadOnly && (
+                      <SelectItem value="NEW_QUARTER">
+                        <div className="flex items-center gap-2">
+                          <Plus className="h-4 w-4" />
+                          <span>新增季度</span>
+                        </div>
+                      </SelectItem>
+                    )}
                     {quarters.map((quarter) => (
                       <SelectItem key={quarter.id} value={quarter.id.toString()}>
                         {quarter.quarterId}
@@ -421,24 +438,6 @@ function HomeContent() {
                   </SelectContent>
                 </Select>
               )}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => {
-                      setAddQuarterError("");
-                      setNewQuarterId("");
-                      setAddQuarterOpen(true);
-                    }}
-                    disabled={isReadOnly}
-                    className={isReadOnly ? "hidden" : ""}
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>新增季度</TooltipContent>
-              </Tooltip>
 
               <Tooltip>
                 <TooltipTrigger asChild>
