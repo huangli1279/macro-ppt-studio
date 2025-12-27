@@ -35,11 +35,12 @@ export function TableChart({ data, className = "", isFullscreen = false }: Table
   // Adjust font size based on fullscreen mode
   const textSize = isFullscreen ? "text-base" : "text-[10px]";
   const titleSize = isFullscreen ? "text-xl" : "text-xs";
+  const titleMargin = isFullscreen ? "mb-4" : "mb-2";
 
   return (
     <div className={`w-full h-full flex flex-col ${className}`}>
       {title && (
-        <div className={`font-bold text-center mb-4 ${titleSize}`}>
+        <div className={`font-bold text-center ${titleMargin} ${titleSize}`}>
           {title}
         </div>
       )}
