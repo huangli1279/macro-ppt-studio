@@ -41,6 +41,7 @@ export function EChartsChart({ data, className = "", isFullscreen = false }: ECh
 
     const defaultTitle = {
       left: "center",
+      top: "top",
     };
 
     const defaultLegend = {
@@ -102,7 +103,7 @@ export function EChartsChart({ data, className = "", isFullscreen = false }: ECh
       grid: {
         left: isFullscreen ? 24 : 16,
         right: isFullscreen ? 24 : 16,
-        top: isFullscreen ? 72 : 58,
+        top: isFullscreen ? 72 : 42,
         bottom: isFullscreen ? 68 : 32,
         containLabel: true,
         ...(option.grid as object || {}),
