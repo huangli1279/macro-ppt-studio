@@ -529,6 +529,21 @@ function HomeContent() {
                     <Button
                       variant="outline"
                       size="icon"
+                      onClick={() => handleAddSlide(selectedIndex + 1)}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>新增幻灯片</TooltipContent>
+                </Tooltip>
+              )}
+
+              {!isReadOnly && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="icon"
                       onClick={toggleViewMode}
                     >
                       {viewMode === "preview" ? (
