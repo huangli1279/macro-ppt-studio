@@ -24,7 +24,7 @@ import { SlideData, ChartConfig } from "@/types/slide";
 import { cn } from "@/lib/utils";
 
 const BORDER_COLORS = [
-  "border-red-500",
+  "border-emerald-500",
   "border-blue-500",
   "border-orange-500",
   "border-slate-400",
