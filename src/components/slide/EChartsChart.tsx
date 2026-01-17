@@ -19,7 +19,7 @@ export function EChartsChart({ data, className = "", isFullscreen = false }: ECh
 
     // Initialize chart
     if (!chartInstance.current) {
-      chartInstance.current = echarts.init(chartRef.current);
+      chartInstance.current = echarts.init(chartRef.current, null, { renderer: "svg" });
     }
 
     // Merge default grid settings to maximize chart space
