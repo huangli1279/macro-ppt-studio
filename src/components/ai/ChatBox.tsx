@@ -1,33 +1,17 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useChat } from "@ai-sdk/react";
+import { DefaultChatTransport } from "ai";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Switch } from "@/components/ui/switch";
 import { Send, Loader2, X, Bot, User, Globe, RotateCcw } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { PPTReport } from "@/types/slide";
 import { getSlideContext } from "@/lib/ai-context";
-
-interface ToolRequest {
-    tool: string;
-    args: any;
-    status: 'pending' | 'confirmed' | 'cancelled';
-}
-
-interface Message {
-    role: "user" | "assistant";
-    content: string;
-    toolRequest?: ToolRequest;
-}
-
-interface ToolStatus {
-    isActive: boolean;
-    toolName?: string;
-}
 
 interface ChatBoxProps {
     open: boolean;
@@ -50,19 +34,18 @@ export function ChatBox({
     onUpdateSlide,
     onDeleteSlide
 }: ChatBoxProps) {
-    const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState("");
-    const [isLoading, setIsLoading] = useState(false);
-    const [toolStatus, setToolStatus] = useState<ToolStatus>({ isActive: false });
     const [isWebSearchEnabled, setIsWebSearchEnabled] = useState(false);
+    const [pendingToolExecution, setPendingToolExecution] = useState<{
+        toolName: string;
+        args: any;
+    } | null>(null);
     const scrollAreaRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
     // -- Drag & Resize State --
     const [position, setPosition] = useState({ x: 0, y: 0 });
     const [size, setSize] = useState({ width: 800, height: 600 });
-
-    // Refs for mutable state during drag/resize (avoids re-renders)
     const interactionRef = useRef({
         isDragging: false,
         isResizing: false,
@@ -72,127 +55,53 @@ export function ChatBox({
         startSize: { w: 0, h: 0 },
     });
 
-    const dialogRef = useRef<HTMLDivElement>(null);
+    // Get slide context for API body
+    const context = getSlideContext(currentSlideIndex, slides);
+    const fullContext = isReadOnly
+        ? context
+        : `${context}\n\n[System] Current Mode: Edit Mode. You can modify slides.`;
 
-    // Derived state for pending tool
-    const hasPendingTool = messages.some(m => m.toolRequest?.status === 'pending');
+    // useChat hook with AI SDK v6 API
+    const { messages, sendMessage, status, setMessages } = useChat({
+        transport: new DefaultChatTransport({
+            api: "/api/chat",
+            // Note: dynamic values like useWebSearch are passed in sendMessage() to avoid stale closures
+        }),
+        onFinish: ({ message }) => {
+            // Check for client-side tool calls in the message parts
+            if (message.parts) {
+                for (const part of message.parts) {
+                    if (part.type.startsWith("tool-") && part.type !== "tool-search_web") {
+                        const toolName = part.type.replace("tool-", "");
+                        if (["add_slide", "update_slide", "delete_slide"].includes(toolName)) {
+                            if (!isReadOnly && "input" in part) {
+                                setPendingToolExecution({
+                                    toolName,
+                                    args: part.input,
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+        },
+    });
+
+    const isLoading = status === "streaming" || status === "submitted";
 
     // Reset session when dialog opens
     useEffect(() => {
         if (open) {
             setMessages([]);
             setInput("");
-            setIsLoading(false);
-            setToolStatus({ isActive: false });
-            // Reset position/size or keep previous?
-            // Keeping previous is better UX, but if closed, maybe reset?
-            // Let's NOT reset position/size to allow "remembering" during session.
-            // If completely unmounted, it will reset anyway.
+            setPendingToolExecution(null);
         }
-    }, [open]);
+    }, [open, setMessages]);
 
-    // -- Drag & Resize Handlers --
-    // -- Drag & Resize Handlers --
-    useEffect(() => {
-        const handleMouseMove = (e: MouseEvent) => {
-            if (!dialogRef.current) return;
-            const state = interactionRef.current;
-
-            if (state.isDragging) {
-                const dx = e.clientX - state.startX;
-                const dy = e.clientY - state.startY;
-
-                // Directly update DOM
-                const newX = state.startPos.x + dx;
-                const newY = state.startPos.y + dy;
-                dialogRef.current.style.translate = `calc(-50% + ${newX}px) calc(-50% + ${newY}px)`;
-            } else if (state.isResizing) {
-                const dx = e.clientX - state.startX;
-                const dy = e.clientY - state.startY;
-
-                // Directly update DOM
-                const newWidth = Math.max(400, state.startSize.w + dx);
-                const newHeight = Math.max(300, state.startSize.h + dy);
-                dialogRef.current.style.width = `${newWidth}px`;
-                dialogRef.current.style.height = `${newHeight}px`;
-            }
-        };
-
-        const handleMouseUp = (e: MouseEvent) => {
-            const state = interactionRef.current;
-            if (!state.isDragging && !state.isResizing) return;
-
-            // Sync final state to React
-            if (state.isDragging) {
-                const dx = e.clientX - state.startX;
-                const dy = e.clientY - state.startY;
-                setPosition({ x: state.startPos.x + dx, y: state.startPos.y + dy });
-                state.isDragging = false;
-            } else if (state.isResizing) {
-                const dx = e.clientX - state.startX;
-                const dy = e.clientY - state.startY;
-                setSize({
-                    width: Math.max(400, state.startSize.w + dx),
-                    height: Math.max(300, state.startSize.h + dy)
-                });
-                state.isResizing = false;
-            }
-
-            document.body.style.userSelect = '';
-        };
-
-        if (open) {
-            window.addEventListener('mousemove', handleMouseMove);
-            window.addEventListener('mouseup', handleMouseUp);
-            // Capture ref if not set
-            const el = document.getElementById('chat-box-content') as HTMLDivElement;
-            if (el) dialogRef.current = el;
-        }
-        return () => {
-            window.removeEventListener('mousemove', handleMouseMove);
-            window.removeEventListener('mouseup', handleMouseUp);
-        };
-    }, [open]);
-
-    const onHeaderMouseDown = (e: React.MouseEvent) => {
-        if ((e.target as HTMLElement).closest('button')) return;
-
-        const el = document.getElementById('chat-box-content') as HTMLDivElement;
-        if (el) dialogRef.current = el;
-
-        interactionRef.current = {
-            isDragging: true,
-            isResizing: false,
-            startX: e.clientX,
-            startY: e.clientY,
-            startPos: { ...position },
-            startSize: { w: size.width, h: size.height },
-        };
-        document.body.style.userSelect = 'none';
-    };
-
-    const onResizeMouseDown = (e: React.MouseEvent) => {
-        e.stopPropagation();
-
-        const el = document.getElementById('chat-box-content') as HTMLDivElement;
-        if (el) dialogRef.current = el;
-
-        interactionRef.current = {
-            isDragging: false,
-            isResizing: true,
-            startX: e.clientX,
-            startY: e.clientY,
-            startPos: { ...position },
-            startSize: { w: size.width, h: size.height }
-        };
-        document.body.style.userSelect = 'none';
-    };
-
-
-    // Auto scroll to bottom when new messages arrive
+    // Auto-scroll to bottom
     useEffect(() => {
         if (scrollAreaRef.current) {
-            const scrollContainer = scrollAreaRef.current.querySelector("[data-radix-scroll-area-viewport]");
+            const scrollContainer = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
             if (scrollContainer) {
                 scrollContainer.scrollTop = scrollContainer.scrollHeight;
             }
@@ -206,244 +115,71 @@ export function ChatBox({
         }
     }, [open]);
 
-    const handleSend = useCallback(async () => {
-        if (!input.trim() || isLoading || hasPendingTool) return;
+    // -- Drag & Resize Handlers --
+    useEffect(() => {
+        const handleMouseMove = (e: MouseEvent) => {
+            const state = interactionRef.current;
+            if (state.isDragging) {
+                const dx = e.clientX - state.startX;
+                const dy = e.clientY - state.startY;
+                setPosition({ x: state.startPos.x + dx, y: state.startPos.y + dy });
+            } else if (state.isResizing) {
+                const dx = e.clientX - state.startX;
+                const dy = e.clientY - state.startY;
+                setSize({
+                    width: Math.max(400, state.startSize.w + dx),
+                    height: Math.max(300, state.startSize.h + dy),
+                });
+            }
+        };
+        const handleMouseUp = () => {
+            interactionRef.current.isDragging = false;
+            interactionRef.current.isResizing = false;
+        };
+        document.addEventListener("mousemove", handleMouseMove);
+        document.addEventListener("mouseup", handleMouseUp);
+        return () => {
+            document.removeEventListener("mousemove", handleMouseMove);
+            document.removeEventListener("mouseup", handleMouseUp);
+        };
+    }, []);
 
-        const userMessage = input.trim();
-        setInput("");
-        setMessages(prev => [...prev, { role: "user", content: userMessage }]);
-        setIsLoading(true);
-        setToolStatus({ isActive: false });
+    const onHeaderMouseDown = (e: React.MouseEvent) => {
+        if ((e.target as HTMLElement).closest('button')) return;
+        interactionRef.current = {
+            isDragging: true, isResizing: false,
+            startX: e.clientX, startY: e.clientY,
+            startPos: { ...position }, startSize: { w: size.width, h: size.height },
+        };
+    };
 
-        try {
-            // Get slide context
-            const context = getSlideContext(currentSlideIndex, slides);
-            // Append Edit Mode status to context
-            const fullContext = isReadOnly
-                ? context
-                : `${context}\n\n[System] Current Mode: Edit Mode. You can modify slides.`;
+    const onResizeMouseDown = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        interactionRef.current = {
+            isDragging: false, isResizing: true,
+            startX: e.clientX, startY: e.clientY,
+            startPos: { ...position }, startSize: { w: size.width, h: size.height },
+        };
+    };
 
-            // Prepare message history for API
-            // Filter out internal tool request messages if needed, or keep them as assistant messages?
-            // OpenAI expects 'role', 'content'. We can pass the content. keeping plain text history is safe.
-            const messageHistory = messages.map(m => ({
-                role: m.role,
-                content: m.content || (m.toolRequest ? `[Tool Request: ${m.toolRequest.tool}]` : "")
-            }));
-            messageHistory.push({ role: "user", content: userMessage });
-
-            const response = await fetch("/api/chat", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    messages: messageHistory,
+    // Handle send message
+    const handleSend = useCallback(() => {
+        if (!input.trim() || isLoading || pendingToolExecution) return;
+        // Pass dynamic body options here to avoid stale closures
+        sendMessage(
+            { text: input.trim() },
+            {
+                body: {
                     context: fullContext,
                     useWebSearch: isWebSearchEnabled,
-                }),
-            });
-
-            if (!response.ok) {
-                throw new Error("Failed to get response");
+                },
             }
+        );
+        setInput("");
+    }, [input, isLoading, pendingToolExecution, sendMessage, fullContext, isWebSearchEnabled]);
 
-            // Handle streaming response
-            const reader = response.body?.getReader();
-            if (!reader) throw new Error("No reader available");
-
-            const decoder = new TextDecoder();
-            let assistantContent = "";
-
-            // Add empty assistant message to be updated -> REMOVED
-            // setMessages(prev => [...prev, { role: "assistant", content: "" }]);
-
-            let messageCreated = false;
-
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-
-                const chunk = decoder.decode(value, { stream: true });
-                const lines = chunk.split("\n");
-
-                for (const line of lines) {
-                    if (line.startsWith("data: ")) {
-                        const data = line.slice(6);
-                        if (data === "[DONE]") continue;
-
-                        try {
-                            const parsed = JSON.parse(data);
-
-                            // Handle tool call status
-                            if (parsed.type === "tool_call") {
-                                setToolStatus({ isActive: true, toolName: parsed.tool });
-                            } else if (parsed.type === "tool_result") {
-                                setToolStatus({ isActive: false });
-                            } else if (parsed.type === "client_tool_call") {
-                                // Handle client-side tool execution
-                                try {
-                                    const args = JSON.parse(parsed.arguments);
-
-                                    if (isReadOnly) {
-                                        assistantContent = "无法执行该操作（只读模式）。";
-
-                                        if (!messageCreated) {
-                                            setMessages(prev => [...prev, { role: "assistant", content: assistantContent }]);
-                                            messageCreated = true;
-                                        } else {
-                                            setMessages(prev => {
-                                                const newMessages = [...prev];
-                                                const lastMessage = newMessages[newMessages.length - 1];
-                                                if (lastMessage.role === "assistant") {
-                                                    lastMessage.content = assistantContent;
-                                                }
-                                                return newMessages;
-                                            });
-                                        }
-                                    } else {
-                                        // Add a new message for the tool request
-                                        // This always appends a new tool card message
-                                        setMessages(prev => [...prev, {
-                                            role: "assistant",
-                                            content: "我需要确认您的操作：",
-                                            toolRequest: {
-                                                tool: parsed.tool,
-                                                args,
-                                                status: 'pending'
-                                            }
-                                        }]);
-                                        // We consider a message created now (even if it's a specific tool one)
-                                        // though this logic path breaks the stream loop logically for client tools usually
-                                        messageCreated = true;
-
-                                        setIsLoading(false); // Stop loading state while waiting for user
-                                        setToolStatus({ isActive: false });
-                                    }
-                                } catch (e) {
-                                    console.error("Client tool parsing failed:", e);
-                                    assistantContent = "解析操作请求时发生错误。";
-                                    if (!messageCreated) {
-                                        setMessages(prev => [...prev, { role: "assistant", content: assistantContent }]);
-                                        messageCreated = true;
-                                    } else {
-                                        setMessages(prev => {
-                                            const newMessages = [...prev];
-                                            const lastMessage = newMessages[newMessages.length - 1];
-                                            lastMessage.content = assistantContent;
-                                            return newMessages;
-                                        });
-                                    }
-                                }
-                            } else if (parsed.type === "content") {
-                                assistantContent += parsed.content;
-
-                                if (!messageCreated) {
-                                    setMessages(prev => [...prev, { role: "assistant", content: assistantContent }]);
-                                    messageCreated = true;
-                                } else {
-                                    setMessages(prev => {
-                                        const newMessages = [...prev];
-                                        const lastMessage = newMessages[newMessages.length - 1];
-                                        if (lastMessage.role === "assistant") {
-                                            lastMessage.content = assistantContent;
-                                        }
-                                        return newMessages;
-                                    });
-                                }
-                            }
-                        } catch {
-                            // Not JSON, might be raw text
-                            assistantContent += data;
-                            if (!messageCreated) {
-                                setMessages(prev => [...prev, { role: "assistant", content: assistantContent }]);
-                                messageCreated = true;
-                            } else {
-                                setMessages(prev => {
-                                    const newMessages = [...prev];
-                                    const lastMessage = newMessages[newMessages.length - 1];
-                                    if (lastMessage.role === "assistant") {
-                                        lastMessage.content = assistantContent;
-                                    }
-                                    return newMessages;
-                                });
-                            }
-                        }
-                    }
-                }
-            }
-        } catch (error) {
-            console.error("Chat error:", error);
-            setMessages(prev => [
-                ...prev,
-                { role: "assistant", content: "抱歉，发生了错误。请稍后重试。" }
-            ]);
-        } finally {
-            // We only force loading off if there isn't a pending tool waiting for interaction
-            // Actually, handleCancel/Confirm will handle the next steps.
-            // If we have a pending tool, we explicitly set isLoading false in the loop.
-            // If we don't, we should set it false here.
-            // But checking `hasPendingTool` here (outside loop scope) captures the state at start of handleSend?
-            // No, the `hasPendingTool` var is from the render scope.
-            // We can't rely on `hasPendingTool` here because it's stale.
-            // Safe to just set false? If pending tool is set, we want inputs enabled?
-            // No, if pending tool, we want main input disabled (handled by hasPendingTool check in render).
-            // But we want Chat Buttons (Confirm/Cancel) enabled.
-            // So `isLoading` must be false.
-            setIsLoading(false);
-            setToolStatus({ isActive: false });
-        }
-    }, [input, isLoading, messages, slides, currentSlideIndex, isReadOnly, hasPendingTool, onAddSlide, onUpdateSlide, onDeleteSlide, isWebSearchEnabled]);
-
-    const handleConfirmTool = async (index: number) => {
-        const msg = messages[index];
-        if (!msg.toolRequest || msg.toolRequest.status !== 'pending') return;
-
-        const { tool, args } = msg.toolRequest;
-
-        // Update status to confirmed
-        setMessages(prev => prev.map((m, i) =>
-            i === index ? { ...m, toolRequest: { ...m.toolRequest!, status: 'confirmed' } } : m
-        ));
-
-        setIsLoading(true);
-
-        try {
-            let content = "";
-            if (tool === "add_slide" && onAddSlide) {
-                await onAddSlide(args);
-                content = "✅ 已添加新幻灯片";
-            } else if (tool === "update_slide" && onUpdateSlide) {
-                await onUpdateSlide(args);
-                content = "✅ 已更新幻灯片";
-            } else if (tool === "delete_slide" && onDeleteSlide) {
-                await onDeleteSlide();
-                content = "✅ 已删除幻灯片";
-            } else {
-                content = "❌ 无法执行该操作（功能未实现或参数错误）";
-            }
-
-            setMessages(prev => [...prev, { role: "assistant", content }]);
-        } catch (e) {
-            console.error("Tool execution error:", e);
-            setMessages(prev => [...prev, { role: "assistant", content: "❌ 操作执行失败" }]);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const handleCancelTool = (index: number) => {
-        setMessages(prev => {
-            const newMessages = [...prev];
-            if (newMessages[index].toolRequest) {
-                newMessages[index] = {
-                    ...newMessages[index],
-                    toolRequest: { ...newMessages[index].toolRequest!, status: 'cancelled' }
-                };
-            }
-            return [...newMessages, { role: "assistant", content: "🚫 操作已取消" }];
-        });
-    };
-
-    const handleKeyDown = (e: React.KeyboardEvent) => {
+    // Handle keyboard submit
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
         if (e.key === "Enter" && !e.shiftKey) {
             if (e.nativeEvent.isComposing) return;
             e.preventDefault();
@@ -451,25 +187,72 @@ export function ChatBox({
         }
     };
 
+    // Reset chat
     const handleReset = useCallback(() => {
         setMessages([]);
         setInput("");
-        setIsLoading(false);
-        setToolStatus({ isActive: false });
-        // Optional: Focus input after reset
+        setPendingToolExecution(null);
         setTimeout(() => textareaRef.current?.focus(), 100);
-    }, []);
+    }, [setMessages]);
 
-    const getToolDescription = (tool: string, args: any) => {
-        switch (tool) {
+    // Confirm tool execution
+    const handleConfirmTool = async () => {
+        if (!pendingToolExecution) return;
+        const { toolName, args } = pendingToolExecution;
+
+        try {
+            let resultText = "";
+            if (toolName === "add_slide" && onAddSlide) {
+                await onAddSlide(args);
+                resultText = "✅ 已添加新幻灯片";
+            } else if (toolName === "update_slide" && onUpdateSlide) {
+                await onUpdateSlide(args);
+                resultText = "✅ 已更新幻灯片";
+            } else if (toolName === "delete_slide" && onDeleteSlide) {
+                await onDeleteSlide();
+                resultText = "✅ 已删除幻灯片";
+            } else {
+                resultText = "❌ 无法执行该操作";
+            }
+            // Add result as a new message
+            setMessages(prev => [...prev, {
+                id: Date.now().toString(),
+                role: "assistant",
+                parts: [{ type: "text", text: resultText }],
+            }]);
+        } catch (e) {
+            console.error("Tool execution error:", e);
+            setMessages(prev => [...prev, {
+                id: Date.now().toString(),
+                role: "assistant",
+                parts: [{ type: "text", text: "❌ 操作执行失败" }],
+            }]);
+        } finally {
+            setPendingToolExecution(null);
+        }
+    };
+
+    // Cancel tool execution
+    const handleCancelTool = () => {
+        setMessages(prev => [...prev, {
+            id: Date.now().toString(),
+            role: "assistant",
+            parts: [{ type: "text", text: "🚫 操作已取消" }],
+        }]);
+        setPendingToolExecution(null);
+    };
+
+    // Get tool description for display
+    const getToolDescription = (toolName: string, args: any) => {
+        switch (toolName) {
             case "add_slide":
-                return `添加新幻灯片，标题为 "${args.title}"${args.charts ? `，包含 ${args.charts.length} 个图表` : ""}`;
+                return `添加新幻灯片，标题为 "${args?.title}"${args?.charts ? `，包含 ${args.charts.length} 个图表` : ""}`;
             case "update_slide":
-                return `更新当前幻灯片${args.title ? `，标题为 "${args.title}"` : ""}${args.charts ? `，更新图表` : ""}`;
+                return `更新当前幻灯片${args?.title ? `，标题为 "${args.title}"` : ""}`;
             case "delete_slide":
                 return `删除当前幻灯片`;
             default:
-                return `执行未知操作: ${tool}`;
+                return `执行操作: ${toolName}`;
         }
     };
 
@@ -483,8 +266,8 @@ export function ChatBox({
                     translate: `calc(-50% + ${position.x}px) calc(-50% + ${position.y}px)`,
                     width: `${size.width}px`,
                     height: `${size.height}px`,
-                    maxHeight: 'none', // Override default max-height
-                    maxWidth: 'none',   // Override default max-width for free sizing
+                    maxHeight: 'none',
+                    maxWidth: 'none',
                 }}
             >
                 <DialogHeader
@@ -496,25 +279,13 @@ export function ChatBox({
                         AI 宏观经济分析助手
                     </DialogTitle>
                     <div className="flex items-center gap-1">
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={handleReset}
-                            disabled={isLoading}
-                            title="重置会话"
-                            className="h-8 w-8 hover:bg-slate-100"
-                            onMouseDown={(e) => e.stopPropagation()}
-                        >
+                        <Button variant="ghost" size="icon" onClick={handleReset} disabled={isLoading}
+                            title="重置会话" className="h-8 w-8 hover:bg-slate-100" onMouseDown={(e) => e.stopPropagation()}>
                             <RotateCcw className={`h-4 w-4 text-slate-500 ${isLoading ? 'opacity-50' : ''}`} />
                         </Button>
                         <DialogClose asChild>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                title="关闭"
-                                className="h-8 w-8 hover:bg-slate-100"
-                                onMouseDown={(e) => e.stopPropagation()}
-                            >
+                            <Button variant="ghost" size="icon" title="关闭" className="h-8 w-8 hover:bg-slate-100"
+                                onMouseDown={(e) => e.stopPropagation()}>
                                 <X className="h-4 w-4 text-slate-500" />
                             </Button>
                         </DialogClose>
@@ -535,111 +306,60 @@ export function ChatBox({
                             </div>
                         )}
 
-                        {messages.map((msg, idx) => (
-                            <div
-                                key={idx}
-                                className={`flex gap-3 ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}
-                            >
-                                <div
-                                    className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${msg.role === "user"
-                                        ? "bg-blue-600 text-white"
-                                        : "bg-slate-200 text-slate-600"
-                                        }`}
-                                >
-                                    {msg.role === "user" ? (
-                                        <User className="h-4 w-4" />
-                                    ) : (
-                                        <Bot className="h-4 w-4" />
-                                    )}
+                        {messages.map((msg) => (
+                            <div key={msg.id} className={`flex gap-3 ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}>
+                                <div className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${msg.role === "user" ? "bg-blue-600 text-white" : "bg-slate-200 text-slate-600"
+                                    }`}>
+                                    {msg.role === "user" ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
                                 </div>
                                 <div className="flex flex-col gap-2 max-w-[80%]">
-                                    {/* Text Content */}
-                                    {msg.content && (
-                                        <div
-                                            className={`rounded-lg px-4 py-2 overflow-hidden ${msg.role === "user"
-                                                ? "bg-blue-600 text-white"
-                                                : "bg-slate-100 text-slate-800"
-                                                }`}
-                                        >
+                                    {msg.parts.filter(p => p.type === "text").map((part, i) => (
+                                        <div key={i} className={`rounded-lg px-4 py-2 overflow-hidden ${msg.role === "user" ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-800"
+                                            }`}>
                                             {msg.role === "assistant" ? (
-                                                <div className="prose prose-sm prose-slate max-w-none [&>p]:my-1 [&>ul]:my-1 [&>ol]:my-1 break-words">
-                                                    <ReactMarkdown
-                                                        remarkPlugins={[remarkGfm]}
-                                                        components={{
-                                                            a: ({ node, ...props }) => (
-                                                                <a {...props} target="_blank" rel="noopener noreferrer" />
-                                                            )
-                                                        }}
-                                                    >
-                                                        {msg.content}
+                                                <div className="prose prose-sm prose-slate max-w-none [&>p]:my-1 break-words">
+                                                    <ReactMarkdown remarkPlugins={[remarkGfm]}
+                                                        components={{ a: ({ ...props }) => <a {...props} target="_blank" rel="noopener noreferrer" /> }}>
+                                                        {part.text}
                                                     </ReactMarkdown>
                                                 </div>
                                             ) : (
-                                                <p className="text-sm whitespace-pre-wrap break-words">{msg.content}</p>
+                                                <p className="text-sm whitespace-pre-wrap break-words">{part.text}</p>
                                             )}
                                         </div>
-                                    )}
-
-                                    {/* Tool Request Card (if present) */}
-                                    {msg.toolRequest && (
-                                        <div className={`border rounded-lg px-4 py-3 shadow-sm w-full ${msg.toolRequest.status === 'pending'
-                                            ? 'bg-white border-blue-200'
-                                            : 'bg-slate-50 border-slate-200 opacity-80'
-                                            }`}>
-                                            <p className={`text-sm font-medium mb-2 ${msg.toolRequest.status === 'pending' ? 'text-slate-800' : 'text-slate-500'
-                                                }`}>
-                                                {msg.toolRequest.status === 'pending' && "我想要执行以下操作："}
-                                                {msg.toolRequest.status === 'confirmed' && "✅ 操作已确认："}
-                                                {msg.toolRequest.status === 'cancelled' && "🚫 操作已取消："}
-                                            </p>
-                                            <div className="bg-slate-100/50 rounded p-2 text-sm text-slate-600 mb-3 font-mono border border-slate-100">
-                                                {getToolDescription(msg.toolRequest.tool, msg.toolRequest.args)}
-                                            </div>
-                                            {msg.toolRequest.status === 'pending' && (
-                                                <div className="flex gap-2 justify-end">
-                                                    <Button
-                                                        size="sm"
-                                                        variant="outline"
-                                                        onClick={() => handleCancelTool(idx)}
-                                                        className="h-8"
-                                                    >
-                                                        取消
-                                                    </Button>
-                                                    <Button
-                                                        size="sm"
-                                                        onClick={() => handleConfirmTool(idx)}
-                                                        className="h-8"
-                                                    >
-                                                        确认执行
-                                                    </Button>
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
+                                    ))}
                                 </div>
                             </div>
                         ))}
 
-                        {/* Loading / Tool Status */}
-                        {isLoading && (toolStatus.isActive || messages.length === 0 || messages[messages.length - 1].role !== "assistant") && (
+                        {/* Pending Tool Confirmation */}
+                        {pendingToolExecution && (
+                            <div className="flex gap-3">
+                                <div className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-slate-200 text-slate-600">
+                                    <Bot className="h-4 w-4" />
+                                </div>
+                                <div className="border rounded-lg px-4 py-3 shadow-sm bg-white border-blue-200">
+                                    <p className="text-sm font-medium mb-2 text-slate-800">我想要执行以下操作：</p>
+                                    <div className="bg-slate-100/50 rounded p-2 text-sm text-slate-600 mb-3 font-mono border border-slate-100">
+                                        {getToolDescription(pendingToolExecution.toolName, pendingToolExecution.args)}
+                                    </div>
+                                    <div className="flex gap-2 justify-end">
+                                        <Button size="sm" variant="outline" onClick={handleCancelTool} className="h-8">取消</Button>
+                                        <Button size="sm" onClick={handleConfirmTool} className="h-8">确认执行</Button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Loading Indicator */}
+                        {isLoading && !pendingToolExecution && (
                             <div className="flex gap-3">
                                 <div className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-slate-200 text-slate-600">
                                     <Bot className="h-4 w-4" />
                                 </div>
                                 <div className="bg-slate-100 rounded-lg px-4 py-2 flex items-center gap-2">
-                                    {toolStatus.isActive ? (
-                                        <>
-                                            <Globe className="h-4 w-4 text-blue-600 animate-pulse" />
-                                            <span className="text-sm text-slate-600">
-                                                正在搜索网络...
-                                            </span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Loader2 className="h-4 w-4 animate-spin text-slate-400" />
-                                            <span className="text-sm text-slate-500">思考中...</span>
-                                        </>
-                                    )}
+                                    <Loader2 className="h-4 w-4 animate-spin text-slate-400" />
+                                    <span className="text-sm text-slate-500">思考中...</span>
                                 </div>
                             </div>
                         )}
@@ -649,7 +369,6 @@ export function ChatBox({
                 {/* Input Area */}
                 <div className="px-6 py-4 border-t border-slate-200 shrink-0 relative">
                     <div className="flex items-end gap-2">
-                        {/* Wrapper for Textarea + Search Button */}
                         <div className="relative flex-1">
                             <Textarea
                                 ref={textareaRef}
@@ -659,46 +378,32 @@ export function ChatBox({
                                 placeholder="输入你的问题..."
                                 className="resize-none min-h-[44px] max-h-[120px] pr-24"
                                 rows={1}
-                                disabled={isLoading || hasPendingTool}
+                                disabled={isLoading || !!pendingToolExecution}
                             />
-
-                            {/* Web Search Button (Inside Input, Bottom Right) */}
                             <Button
+                                type="button"
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => setIsWebSearchEnabled(!isWebSearchEnabled)}
                                 className={`absolute bottom-2 right-2 h-7 rounded-full text-xs transition-colors border ${isWebSearchEnabled
-                                    ? "bg-blue-100 text-blue-600 border-blue-200 hover:bg-blue-200 hover:text-blue-700"
-                                    : "bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200 hover:text-slate-600"
+                                    ? "bg-blue-100 text-blue-600 border-blue-200 hover:bg-blue-200"
+                                    : "bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200"
                                     }`}
                             >
                                 <Globe className={`h-3 w-3 mr-1.5 ${isWebSearchEnabled ? "animate-pulse" : ""}`} />
-                                {isWebSearchEnabled ? "联网搜索" : "联网搜索"}
+                                联网搜索
                             </Button>
                         </div>
-
-                        <Button
-                            size="icon"
-                            onClick={handleSend}
-                            disabled={!input.trim() || isLoading || hasPendingTool}
-                            className="shrink-0 h-[44px] w-[44px]"
-                        >
-                            {isLoading ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                                <Send className="h-4 w-4" />
-                            )}
+                        <Button size="icon" onClick={handleSend} disabled={!input.trim() || isLoading || !!pendingToolExecution}
+                            className="shrink-0 h-[44px] w-[44px]">
+                            {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                         </Button>
                     </div>
 
                     {/* Resize Handle */}
-                    <div
-                        className="absolute bottom-1 right-1 w-4 h-4 cursor-se-resize flex items-center justify-center opacity-50 hover:opacity-100"
-                        onMouseDown={onResizeMouseDown}
-                    >
-                        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M10 10L10 0L0 10L10 10Z" fill="#94a3b8" />
-                        </svg>
+                    <div className="absolute bottom-1 right-1 w-4 h-4 cursor-se-resize flex items-center justify-center opacity-50 hover:opacity-100"
+                        onMouseDown={onResizeMouseDown}>
+                        <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M10 10L10 0L0 10L10 10Z" fill="#94a3b8" /></svg>
                     </div>
                 </div>
             </DialogContent>

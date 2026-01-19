@@ -1,12 +1,18 @@
 import { NextRequest } from "next/server";
-import OpenAI from "openai";
+import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
+import { streamText, tool, stepCountIs, convertToModelMessages, UIMessage } from "ai";
+import { z } from "zod";
 import { tavily } from "@tavily/core";
 
-// Initialize OpenAI client
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-    baseURL: process.env.OPENAI_BASE_URL || undefined,
+// Initialize OpenAI-compatible provider (uses Chat Completions API, not Responses API)
+const provider = createOpenAICompatible({
+    name: "openai-compatible",
+    apiKey: process.env.OPENAI_API_KEY || "",
+    baseURL: process.env.OPENAI_BASE_URL || "https://api.openai.com/v1",
 });
+
+// Initialize Tavily client
+const tavilyClient = tavily({ apiKey: process.env.TAVILY_API_KEY || "" });
 
 // System prompt template
 const SYSTEM_PROMPT_TEMPLATE = `你是一位专业的宏观经济分析专家，同时也是一位乐于助人的AI助手。你的主要任务是帮助用户理解和分析宏观经济报告幻灯片的内容，但你也可以回答用户的其他问题。
@@ -19,12 +25,6 @@ const SYSTEM_PROMPT_TEMPLATE = `你是一位专业的宏观经济分析专家，
 
 {{CONTEXT}}
 
-## 你的能力
-1. 基于幻灯片内容回答用户问题
-2. 提供宏观经济分析和解读
-3. 使用 search_web 工具搜索最新的宏观经济数据、新闻、天气或其他实时信息
-4. 帮助用户理解经济指标和趋势
-
 ## 回答要求
 - 使用中文回答
 - 回答应简洁专业
@@ -32,112 +32,6 @@ const SYSTEM_PROMPT_TEMPLATE = `你是一位专业的宏观经济分析专家，
 - **时间感知**：在使用 search_web 工具时，**必须**在查询词中携带当前的年份和月份（例如"2025年12月"），以确保搜索结果的时效性，避免使用过时的数据。
 - 引用幻灯片内容时，注明是来自哪张幻灯片
 - 使用 Markdown 格式化回答`;
-
-// Initialize Tavily client
-const tavilyClient = tavily({ apiKey: process.env.TAVILY_API_KEY || "" });
-
-// Tool definition for web search and slide management
-const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
-    {
-        type: "function",
-        function: {
-            name: "search_web",
-            description: "搜索互联网获取最新的实时信息。当用户询问宏观经济数据、新闻或其他需要最新数据的问题时，必须使用此工具。请优先搜索政府、官方机构、权威组织发布的内容。",
-            parameters: {
-                type: "object",
-                properties: {
-                    query: {
-                        type: "string",
-                        description: "搜索查询词，应该简洁明确",
-                    },
-                },
-                required: ["query"],
-            },
-        },
-    },
-    {
-        type: "function",
-        function: {
-            name: "add_slide",
-            description: "在当前演示文稿中添加一张新幻灯片。当用户明确要求添加幻灯片时使用。",
-            parameters: {
-                type: "object",
-                properties: {
-                    title: {
-                        type: "string",
-                        description: "幻灯片标题",
-                    },
-                    content: {
-                        type: "array",
-                        items: { type: "string" },
-                        description: "幻灯片正文内容要点（文本数组）",
-                    },
-                    charts: {
-                        type: "array",
-                        items: {
-                            type: "object",
-                            properties: {
-                                type: { type: "string", enum: ["table", "echarts", "image"] },
-                                data: { type: "object" }
-                            },
-                            required: ["type", "data"]
-                        },
-                        description: "图表配置列表（符合 JSON 指南）",
-                    },
-                    type: {
-                        type: "string",
-                        description: "幻灯片布局类型（仅用于提示，实际由内容决定）",
-                    }
-                },
-                required: ["title", "content"],
-            },
-        },
-    },
-    {
-        type: "function",
-        function: {
-            name: "update_slide",
-            description: "更新当前（正在查看的）幻灯片的内容。当用户要求修改当前幻灯片时使用。",
-            parameters: {
-                type: "object",
-                properties: {
-                    title: {
-                        type: "string",
-                        description: "新的标题（如果不修改则不传）",
-                    },
-                    content: {
-                        type: "array",
-                        items: { type: "string" },
-                        description: "新的正文内容要点（将完全替换现有内容，如果不修改则不传）",
-                    },
-                    charts: {
-                        type: "array",
-                        items: {
-                            type: "object",
-                            properties: {
-                                type: { type: "string", enum: ["table", "echarts", "image"] },
-                                data: { type: "object" }
-                            },
-                            required: ["type", "data"]
-                        },
-                        description: "新的图表配置列表（将完全替换现有图表，如果不修改则不传）",
-                    },
-                },
-            },
-        },
-    },
-    {
-        type: "function",
-        function: {
-            name: "delete_slide",
-            description: "删除当前（正在查看的）幻灯片。当用户要求删除当前幻灯片时使用。",
-            parameters: {
-                type: "object",
-                properties: {},
-            },
-        },
-    },
-];
 
 // Execute Tavily search
 async function executeSearch(query: string): Promise<{ context: string; sources: { title: string; url: string }[] }> {
@@ -180,61 +74,21 @@ function buildSystemPrompt(context: string, useWebSearch: boolean = false): stri
         minute: "2-digit",
     });
 
-    // const isEditMode = context.includes("Edit Mode"); // Simple check or pass explicitly
-
     let prompt = SYSTEM_PROMPT_TEMPLATE
         .replace("{{CURRENT_TIME}}", timeStr)
         .replace("{{CONTEXT}}", context);
 
-    // Append editing capabilities if applicable
-    prompt += `\n\n## 幻灯片编辑能力
-你具备直接编辑幻灯片的能力。当用户明确要求添加、修改或删除幻灯片时，**请直接调用相应的工具** (add_slide, update_slide, delete_slide)，而不需要告诉用户你怎么做。
-- 添加幻灯片：调用 add_slide
-- 修改当前幻灯片：调用 update_slide
-- 删除当前幻灯片：调用 delete_slide
+    // Append editing capabilities (JSON schema only, tool descriptions are in tool definitions)
+    prompt += `\n\n## 幻灯片编辑行为
+当用户要求编辑幻灯片时，**直接调用相应工具**，不要解释你将如何操作。
 
 ## 幻灯片 JSON 数据规范
-为了正确地增删改幻灯片，特别是涉及复杂图表时，请严格参考以下 JSON 规范：
+为了生成正确的幻灯片数据，请严格参考以下规范：
 
-### 1. 核心结构
-每个幻灯片由标题、论点（Content）和图表（Charts）三部分组成。
-- **title** (可选): 字符串
-- **content** (必填): 字符串数组 (最多 4 条)
-- **charts** (必填): 图表对象数组 (最多 4 个)
+### 核心约束
+- **content**: 字符串数组，最多 4 条
+- **charts**: 图表对象数组，最多 4 个
 **注意：content 和 charts 的数量均不能超过 4 个，否则会导致布局错误。**
-
-### 2. 自动化布局规则
-系统根据 content (论点数) 和 charts (图表数) 的数量自动选择最佳布局。
-推荐组合：
-- **2+1** (2论点+1图表)
-- **2+2** (2论点+2图表)
-- **3+3** (3论点+3图表)
-- **4+4** (4论点+4图表)
-
-### 3. 图表类型详解
-charts 数组中的每个对象必须包含 type 和 data 属性。
-
-#### 3.1 表格 (Table)
-type: "table"
-data: {
-  "title": "可选标题",
-  "data": {
-    "列名1": [值1, 值2],
-    "列名2": [值1, 值2]
-  }
-}
-单元格样式支持对象: { "value": "值", "color": "red", "font-weight": "bold" }
-
-#### 3.2 ECharts 图表 (ECharts)
-type: "echarts"
-data: ECharts 配置对象 (包含 title, xAxis, yAxis, series 等)
-系统会自动注入默认配色和字体，只需提供核心数据。
-
-#### 3.3 图片 (Image)
-type: "image"
-data: { "src": "URL" }
-
-### 5. 复杂实战示例 (重要参考)
 当用户提供的数据较多或需要复杂图表时，请参考此结构：
 
 \`\`\`json
@@ -273,24 +127,74 @@ data: { "src": "URL" }
 
     // Append web search instruction if enabled
     if (useWebSearch) {
-        prompt += `\n\n## 联网搜索强制开启
-用户已开启"联网搜索"模式。对于用户的每一个问题，你**必须**使用 search_web 工具进行搜索，以确保回答包含最新的互联网信息。即使问题看起来可以通过常识回答，也请进行搜索以获取最新背景。
+        prompt += `\n\n## 联网搜索模式
+用户已开启联网搜索。对于每个问题，**必须先调用 search_web**，确保回答包含最新信息。
 
 ### 搜索来源偏好
-在使用 search_web 时，请优先寻找并引用以下高质量来源发布的内容：
-- 政府部门（如统计局、财政部、央行等）
-- 国际组织（如IMF、世界银行、OECD等）
-- 知名金融机构（如主要商业银行、投行研究部）
-- 官方媒体和权威新闻机构
-- 知名智库和研究机构
+优先引用：政府部门、国际组织、知名金融机构、官方媒体、权威智库。
+避免引用：非专业自媒体、个人博客、未验证的论坛帖子。
 
-尽量避免引用非专业自媒体、个人博客或未经验证的论坛帖子。
-
-在调用工具之前，**严禁**输出任何解释性文字（如"我将为您搜索..."）。请直接调用 search_web 工具。`;
+**禁止**在调用工具前输出解释性文字，直接调用 search_web。`;
     }
 
     return prompt;
 }
+
+// Chart schema for Zod validation
+const chartSchema = z.object({
+    type: z.enum(["table", "echarts", "image"]),
+    data: z.record(z.string(), z.any())
+});
+
+// Tool definitions using AI SDK v6 tool() helper with inputSchema
+const searchWebTool = tool({
+    description: "搜索互联网获取最新的实时信息。当用户询问宏观经济数据、新闻或其他需要最新数据的问题时，必须使用此工具。请优先搜索政府、官方机构、权威组织发布的内容。",
+    inputSchema: z.object({
+        query: z.string().describe("搜索查询词，应该简洁明确"),
+    }),
+    execute: async ({ query }) => {
+        return await executeSearch(query);
+    },
+});
+
+const addSlideTool = tool({
+    description: "在当前演示文稿中添加一张新幻灯片。当用户明确要求添加幻灯片时使用。",
+    inputSchema: z.object({
+        title: z.string().describe("幻灯片标题"),
+        content: z.array(z.string()).describe("幻灯片正文内容要点（文本数组）"),
+        charts: z.array(chartSchema).optional().describe("图表配置列表（符合 JSON 指南）"),
+        type: z.string().optional().describe("幻灯片布局类型（仅用于提示，实际由内容决定）"),
+    }),
+    // No execute - client-side tool
+});
+
+const updateSlideTool = tool({
+    description: "更新当前（正在查看的）幻灯片的内容。当用户要求修改当前幻灯片时使用。",
+    inputSchema: z.object({
+        title: z.string().optional().describe("新的标题（如果不修改则不传）"),
+        content: z.array(z.string()).optional().describe("新的正文内容要点（将完全替换现有内容，如果不修改则不传）"),
+        charts: z.array(chartSchema).optional().describe("新的图表配置列表（将完全替换现有图表，如果不修改则不传）"),
+    }),
+    // No execute - client-side tool
+});
+
+const deleteSlideTool = tool({
+    description: "删除当前（正在查看的）幻灯片。当用户要求删除当前幻灯片时使用。",
+    inputSchema: z.object({}),
+    // No execute - client-side tool
+});
+
+// Tool sets for different modes
+const slideTools = {
+    add_slide: addSlideTool,
+    update_slide: updateSlideTool,
+    delete_slide: deleteSlideTool,
+};
+
+const allTools = {
+    search_web: searchWebTool,
+    ...slideTools,
+};
 
 export async function POST(request: NextRequest) {
     try {
@@ -303,215 +207,17 @@ export async function POST(request: NextRequest) {
             });
         }
 
-        // Build messages array with system prompt
-        const systemMessage: OpenAI.Chat.Completions.ChatCompletionMessageParam = {
-            role: "system",
-            content: buildSystemPrompt(context || "", useWebSearch),
-        };
-
-        const chatMessages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
-            systemMessage,
-            ...messages.map((m: { role: string; content: string }) => ({
-                role: m.role as "user" | "assistant",
-                content: m.content,
-            })),
-        ];
-
-        // Filter tools based on useWebSearch preference
-        let availableTools = tools;
-        if (useWebSearch === false) {
-            // Remove search_web tool if functionality is disabled
-            // We ensure we check type === 'function' to satisfy TS union narrowing
-            availableTools = tools.filter(t => t.type === 'function' && t.function.name !== "search_web");
-        }
-
-        // Create streaming response
-        const encoder = new TextEncoder();
-        const stream = new ReadableStream({
-            async start(controller) {
-                try {
-                    // First API call - may include tool calls
-                    let response = await openai.chat.completions.create({
-                        model: process.env.OPENAI_MODEL || "gpt-4o-mini",
-                        messages: chatMessages,
-                        tools: availableTools.length > 0 ? availableTools : undefined,
-                        tool_choice: "auto",
-                        stream: true,
-                    });
-
-                    let currentToolCalls: { id: string; name: string; arguments: string }[] = [];
-                    let fullContent = "";
-
-                    // Process streaming response
-                    for await (const chunk of response) {
-                        const delta = chunk.choices[0]?.delta;
-
-                        // Handle content
-                        if (delta?.content) {
-                            fullContent += delta.content;
-                            controller.enqueue(
-                                encoder.encode(`data: ${JSON.stringify({ type: "content", content: delta.content })}\n\n`)
-                            );
-                        }
-
-                        // Handle tool calls
-                        if (delta?.tool_calls) {
-                            for (const toolCall of delta.tool_calls) {
-                                const index = toolCall.index;
-                                if (!currentToolCalls[index]) {
-                                    currentToolCalls[index] = {
-                                        id: toolCall.id || "",
-                                        name: toolCall.function?.name || "",
-                                        arguments: "",
-                                    };
-                                }
-                                if (toolCall.id) {
-                                    currentToolCalls[index].id = toolCall.id;
-                                }
-                                if (toolCall.function?.name) {
-                                    currentToolCalls[index].name = toolCall.function.name;
-                                }
-                                if (toolCall.function?.arguments) {
-                                    currentToolCalls[index].arguments += toolCall.function.arguments;
-                                }
-                            }
-                        }
-                    }
-
-                    // If there are tool calls, categorize them
-                    if (currentToolCalls.length > 0) {
-                        const clientSideTools = ["add_slide", "update_slide", "delete_slide"];
-                        const serverSideToolCalls = currentToolCalls.filter(tc => !clientSideTools.includes(tc.name));
-                        const clientToolCalls = currentToolCalls.filter(tc => clientSideTools.includes(tc.name));
-
-                        // 1. Handle Client-side tools (Send to client and STOP)
-                        if (clientToolCalls.length > 0) {
-                            // We construct a specific event for the client to handle
-                            for (const tc of clientToolCalls) {
-                                controller.enqueue(
-                                    encoder.encode(`data: ${JSON.stringify({
-                                        type: "client_tool_call",
-                                        tool: tc.name, // add_slide, update_slide, delete_slide
-                                        arguments: tc.arguments
-                                    })}\n\n`)
-                                );
-                            }
-                            // We stop here for client tools. The client will handle the UI update.
-                            // We do NOT recurse for client tools in this design to keep it simple.
-                            controller.enqueue(encoder.encode("data: [DONE]\n\n"));
-                            controller.close();
-                            return;
-                        }
-
-                        // 2. Handle Server-side tools (Execute and Recurse)
-                        if (serverSideToolCalls.length > 0) {
-                            // Notify client about tool call (visual feedback only)
-                            controller.enqueue(
-                                encoder.encode(`data: ${JSON.stringify({ type: "tool_call", tool: serverSideToolCalls[0].name })}\n\n`)
-                            );
-
-                            // Prepare tool results
-                            const toolResults: OpenAI.Chat.Completions.ChatCompletionToolMessageParam[] = [];
-                            const collectedSources: { title: string; url: string }[] = [];
-
-                            for (const toolCall of serverSideToolCalls) {
-                                if (toolCall.name === "search_web") {
-                                    try {
-                                        const args = JSON.parse(toolCall.arguments);
-                                        const searchResult = await executeSearch(args.query);
-
-                                        collectedSources.push(...searchResult.sources);
-
-                                        toolResults.push({
-                                            role: "tool",
-                                            tool_call_id: toolCall.id,
-                                            content: searchResult.context,
-                                        });
-                                    } catch (e) {
-                                        toolResults.push({
-                                            role: "tool",
-                                            tool_call_id: toolCall.id,
-                                            content: "工具调用失败",
-                                        });
-                                    }
-                                }
-                            }
-
-                            // Notify tool result
-                            controller.enqueue(
-                                encoder.encode(`data: ${JSON.stringify({ type: "tool_result" })}\n\n`)
-                            );
-
-                            // Make second API call with tool results
-                            const secondMessages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
-                                ...chatMessages,
-                                {
-                                    role: "assistant",
-                                    content: fullContent || null,
-                                    tool_calls: serverSideToolCalls.map(tc => ({
-                                        id: tc.id,
-                                        type: "function" as const,
-                                        function: {
-                                            name: tc.name,
-                                            arguments: tc.arguments,
-                                        },
-                                    })),
-                                },
-                                ...toolResults,
-                            ];
-
-                            const secondResponse = await openai.chat.completions.create({
-                                model: process.env.OPENAI_MODEL || "gpt-4o-mini",
-                                messages: secondMessages,
-                                tools: availableTools.length > 0 ? availableTools : undefined,
-                                stream: true,
-                            });
-
-                            for await (const chunk of secondResponse) {
-                                const delta = chunk.choices[0]?.delta;
-                                if (delta?.content) {
-                                    controller.enqueue(
-                                        encoder.encode(`data: ${JSON.stringify({ type: "content", content: delta.content })}\n\n`)
-                                    );
-                                }
-                            }
-
-                            // Append collected sources if any
-                            if (collectedSources.length > 0) {
-                                // Deduplicate sources by URL
-                                const uniqueSources = Array.from(new Map(collectedSources.map(s => [s.url, s])).values());
-
-                                let sourcesText = "\n\n**参考来源:**\n";
-                                uniqueSources.forEach((source, index) => {
-                                    sourcesText += `${index + 1}. [${source.title}](${source.url})\n`;
-                                });
-
-                                controller.enqueue(
-                                    encoder.encode(`data: ${JSON.stringify({ type: "content", content: sourcesText })}\n\n`)
-                                );
-                            }
-                        }
-                    }
-
-                    controller.enqueue(encoder.encode("data: [DONE]\n\n"));
-                    controller.close();
-                } catch (error) {
-                    console.error("Stream error:", error);
-                    controller.enqueue(
-                        encoder.encode(`data: ${JSON.stringify({ type: "error", message: "Stream error" })}\n\n`)
-                    );
-                    controller.close();
-                }
-            },
+        // Use streamText with convertToModelMessages for better compatibility
+        const result = streamText({
+            model: provider.chatModel(process.env.OPENAI_MODEL || "gpt-4o-mini"),
+            system: buildSystemPrompt(context || "", useWebSearch),
+            messages: await convertToModelMessages(messages as UIMessage[]),
+            tools: useWebSearch ? allTools : slideTools,
+            stopWhen: stepCountIs(5),
         });
 
-        return new Response(stream, {
-            headers: {
-                "Content-Type": "text/event-stream",
-                "Cache-Control": "no-cache",
-                "Connection": "keep-alive",
-            },
-        });
+        // Return UI message stream response
+        return result.toUIMessageStreamResponse();
     } catch (error) {
         console.error("Chat API error:", error);
         return new Response(JSON.stringify({ error: "Internal server error" }), {
